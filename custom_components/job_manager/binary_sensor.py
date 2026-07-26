@@ -151,7 +151,6 @@ class JobBinarySensor(BinarySensorEntity):
     @property
     def icon(self) -> str:
         """Return the icon."""
-        self._check_if_due()
         return "mdi:clipboard-check" if self._is_due else "mdi:clipboard"
 
     @property
@@ -185,9 +184,7 @@ class JobBinarySensor(BinarySensorEntity):
             last_occurrence = cron.get_prev(ret_type=datetime)
 
             if self._last_triggered:
-                last_triggered = datetime.fromisoformat(self._last_triggered)
-                if last_triggered.tzinfo is None:
-                    last_triggered = last_triggered.replace(tzinfo=utcnow().tzinfo)
+                last_triggered = self._ensure_timezone_aware_datetime(self._last_triggered)
                 return last_triggered < last_occurrence
             else:
                 # Never been triggered, check if it's past the first occurrence
@@ -206,21 +203,23 @@ class JobBinarySensor(BinarySensorEntity):
             return True
 
         try:
-            last_completed = datetime.fromisoformat(self._last_completed)
-            if last_completed.tzinfo is None:
-                last_completed = last_completed.replace(tzinfo=utcnow().tzinfo)
+            last_completed = self._ensure_timezone_aware_datetime(self._last_completed)
             due_date = last_completed + timedelta(days=self._days_interval)
             return utcnow() >= due_date
         except Exception as e:
             _LOGGER.error(f"Error checking frequency for {self._attr_name}: {e}")
             return False
 
-    def _ensure_timezone_aware_iso(self, value: str) -> str:
-        """Return an ISO datetime string with timezone information."""
+    def _ensure_timezone_aware_datetime(self, value: str) -> datetime:
+        """Return a timezone-aware datetime."""
         parsed = datetime.fromisoformat(value)
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=utcnow().tzinfo)
-        return parsed.isoformat()
+        return parsed
+
+    def _ensure_timezone_aware_iso(self, value: str) -> str:
+        """Return an ISO datetime string with timezone information."""
+        return self._ensure_timezone_aware_datetime(value).isoformat()
 
     async def _save_job_state(self) -> None:
         """Save job state to storage."""
