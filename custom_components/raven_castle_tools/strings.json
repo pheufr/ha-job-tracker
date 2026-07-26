@@ -1,0 +1,192 @@
+{
+  "title": "Raven Castle Tools",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Raven Castle Tools",
+        "description": "Configure Raven Castle Tools integration"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Raven Castle Tools",
+        "menu_options": {
+          "manage_jobs": "Manage RC Jobs",
+          "manage_quiz": "Manage RC Quiz"
+        }
+      },
+      "manage_jobs": {
+        "title": "Manage RC Jobs",
+        "menu_options": {
+          "create_job": "Add Job",
+          "list_jobs": "List Jobs"
+        }
+      },
+      "create_job": {
+        "title": "Add RC Job",
+        "data": {
+          "name": "Name",
+          "trigger_type": "Trigger Type",
+          "cron_expression": "Cron Expression",
+          "days_interval": "Days Interval",
+          "image": "Image",
+          "priority": "Priority"
+        }
+      },
+      "list_jobs": {
+        "title": "List RC Jobs",
+        "data": {
+          "job_id": "Job"
+        }
+      },
+      "edit_job": {
+        "title": "Edit RC Job",
+        "data": {
+          "name": "Name",
+          "trigger_type": "Trigger Type",
+          "cron_expression": "Cron Expression",
+          "days_interval": "Days Interval",
+          "image": "Image",
+          "priority": "Priority",
+          "action": "Action"
+        }
+      },
+      "manage_quiz": {
+        "title": "Manage RC Quiz",
+        "menu_options": {
+          "add_player": "Add Player",
+          "list_players": "List Players"
+        }
+      },
+      "add_player": {
+        "title": "Add Quiz Player",
+        "data": {
+          "name": "Name",
+          "alias": "Alias",
+          "photo": "Photo"
+        }
+      },
+      "list_players": {
+        "title": "List Quiz Players",
+        "data": {
+          "player_id": "Player"
+        }
+      },
+      "edit_player": {
+        "title": "Edit Quiz Player",
+        "data": {
+          "name": "Name",
+          "alias": "Alias",
+          "photo": "Photo",
+          "enabled": "Enabled",
+          "action": "Action"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name is required",
+      "alias_required": "Alias is required",
+      "cron_required": "Cron expression is required",
+      "days_required": "Days interval must be greater than 0"
+    },
+    "abort": {
+      "job_created": "Job created",
+      "job_updated": "Job updated",
+      "job_deleted": "Job deleted",
+      "job_not_found": "Job not found",
+      "no_jobs": "No jobs found",
+      "player_created": "Player created",
+      "player_updated": "Player updated",
+      "player_deleted": "Player deleted",
+      "player_not_found": "Player not found",
+      "no_players": "No players found"
+    }
+  },
+  "services": {
+    "trigger_job": {
+      "name": "Trigger RC Job",
+      "description": "Manually trigger an RC Job to mark it as due",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The RC Jobs entity ID to trigger"
+        }
+      }
+    },
+    "complete_job": {
+      "name": "Complete RC Job",
+      "description": "Mark an RC Job as completed",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The RC Jobs entity ID to complete"
+        }
+      }
+    },
+    "add_player": {
+      "name": "Add Player",
+      "description": "Add a player to RC Quiz",
+      "fields": {
+        "name": {"name": "Name", "description": "Player full name"},
+        "alias": {"name": "Alias", "description": "Player leaderboard alias"},
+        "photo": {"name": "Photo", "description": "Player photo URL or path"}
+      }
+    },
+    "remove_player": {
+      "name": "Remove Player",
+      "description": "Remove a player from RC Quiz",
+      "fields": {
+        "entity_id": {"name": "Entity ID", "description": "Player sensor entity ID"},
+        "player_id": {"name": "Player ID", "description": "Player ID"}
+      }
+    },
+    "enable_player": {
+      "name": "Enable Player",
+      "description": "Enable player for current quiz",
+      "fields": {
+        "entity_id": {"name": "Entity ID", "description": "Player sensor entity ID"},
+        "player_id": {"name": "Player ID", "description": "Player ID"}
+      }
+    },
+    "disable_player": {
+      "name": "Disable Player",
+      "description": "Disable player for current quiz",
+      "fields": {
+        "entity_id": {"name": "Entity ID", "description": "Player sensor entity ID"},
+        "player_id": {"name": "Player ID", "description": "Player ID"}
+      }
+    },
+    "add_points": {
+      "name": "Add Points",
+      "description": "Add points to current round score",
+      "fields": {
+        "entity_id": {"name": "Entity ID", "description": "Player sensor entity ID"},
+        "player_id": {"name": "Player ID", "description": "Player ID"},
+        "points": {"name": "Points", "description": "Points to add"}
+      }
+    },
+    "remove_points": {
+      "name": "Remove Points",
+      "description": "Remove points from current round score",
+      "fields": {
+        "entity_id": {"name": "Entity ID", "description": "Player sensor entity ID"},
+        "player_id": {"name": "Player ID", "description": "Player ID"},
+        "points": {"name": "Points", "description": "Points to remove"}
+      }
+    },
+    "start_new_round": {
+      "name": "Start New Round",
+      "description": "Move current round scores into totals and reset current round"
+    },
+    "start_new_quiz": {
+      "name": "Start New Quiz",
+      "description": "Reset all quiz scores to zero"
+    },
+    "reset_quiz": {
+      "name": "Reset Quiz",
+      "description": "Reset all scores and disable all players"
+    }
+  }
+}

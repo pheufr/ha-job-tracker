@@ -1,4 +1,4 @@
-# Raven Castle
+# Home Assistant Raven Castle Tools
 
 A multi-feature Home Assistant custom integration providing tools for home automation.
 
@@ -54,9 +54,9 @@ Each job supports:
 Manually trigger a job to mark it as due:
 
 ```yaml
-service: raven_castle.trigger_job
+service: raven_castle_tools.trigger_job
 data:
-  entity_id: binary_sensor.rc_jobs_abc123
+  entity_id: binary_sensor.rc_jobs_trash_day
 ```
 
 #### `raven_castle.complete_job`
@@ -64,22 +64,14 @@ data:
 Mark a job as completed:
 
 ```yaml
-service: raven_castle.complete_job
+service: raven_castle_tools.complete_job
 data:
-  entity_id: binary_sensor.rc_jobs_abc123
+  entity_id: binary_sensor.rc_jobs_trash_day
 ```
 
 ### RC Jobs Card
 
 Add a custom Lovelace card to display job images. First, add the resource in Lovelace settings:
-
-```yaml
-resources:
-  - url: /local/community/raven_castle/rc-jobs-card.js
-    type: module
-```
-
-Then add the card:
 
 ```yaml
 type: custom:rc-jobs-card
@@ -122,7 +114,7 @@ automation:
       - platform: time
         at: "20:00:00"
     action:
-      - service: raven_castle.complete_job
+      - service: raven_castle_tools.complete_job
         data:
           entity_id: binary_sensor.rc_jobs_evening_routine
 ```
@@ -157,3 +149,12 @@ Each RC Jobs binary sensor includes the following attributes:
 ## License
 
 MIT
+
+
+## RC Quiz
+
+RC Quiz adds player-based score tracking with entities like `sensor.rc_quiz_<player_id>` and services such as `add_player`, `add_points`, `start_new_round`, and `start_new_quiz` under the `raven_castle_tools` domain.
+
+Two custom cards are included in `custom_components/raven_castle_tools/www`:
+- `rc-quiz-leaderboard-card.js` for public score display
+- `rc-quiz-master-card.js` for quiz control actions
