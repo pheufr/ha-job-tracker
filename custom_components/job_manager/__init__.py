@@ -9,6 +9,8 @@ from homeassistant.const import (
     SERVICE_RELOAD,
 )
 
+from .config_flow import JobManagerOptionsFlow
+
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "job_manager"
@@ -30,9 +32,6 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Job Manager from a config entry."""
     hass.data[DOMAIN][entry.entry_id] = {}
-
-    # Set up options flow
-    entry.async_on_unload(entry.add_update_listener(async_update_listener))
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -88,16 +87,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_update_listener(
-    hass: HomeAssistant, entry: ConfigEntry
-) -> None:
-    """Handle options update."""
-    await hass.config_entries.async_reload(entry.entry_id)
-
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
+
+
+async def async_get_options_flow(config_entry: ConfigEntry):
+    """Return the options flow for this integration."""
+    return JobManagerOptionsFlow(config_entry)
