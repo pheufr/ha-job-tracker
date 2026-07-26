@@ -95,6 +95,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-async def async_get_options_flow(config_entry: ConfigEntry):
-    """Return the options flow for this integration."""
-    return JobManagerOptionsFlow(config_entry)
+@config_entries.register_options_flow
+class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Config flow for Job Manager."""
+
+    async_get_options_flow = staticmethod(
+        lambda config_entry: JobManagerOptionsFlow(config_entry)
+    )
