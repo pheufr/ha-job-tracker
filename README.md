@@ -1,35 +1,43 @@
 # Home Assistant Raven Castle Tools
 
-A Home Assistant custom integration that allows you to manage recurring jobs/tasks. Each job is exposed as a binary sensor device that automatically tracks when it's due based on schedules or frequencies.
+A multi-feature Home Assistant custom integration providing tools for home automation.
 
 ## Features
 
-- **Schedule-based triggers**: Use cron expressions (1st of month, last Tuesday, etc.)
-- **Frequency-based triggers**: Mark as due every N days since last completion
-- **Manual triggers**: Use the `trigger_job` action to manually mark a job as due
-- **Manual completion**: Use the `complete_job` action to mark a job as completed
-- **Priority system**: Jobs have a priority level (displayed in picture card)
-- **Job images**: Assign images to jobs for visual display
-- **Picture Jobs card**: Custom Lovelace card displaying due job images sorted by priority
-- **Automations**: Integrate with Home Assistant automations to take actions when jobs become due
-- **Binary sensor devices**: Each job is exposed as a binary sensor (on = due, off = not due)
+### RC Jobs ✅
+Track and manage recurring jobs/tasks with customizable schedules or frequencies. Each job is exposed as a binary sensor that automatically tracks when it is due.
+
+**Entity naming**: `binary_sensor.rc_jobs_{job_id}`
+
+### RC Quiz 🔜
+Interactive quiz system with player tracking (coming soon).
+
+**Entity naming**: `sensor.rc_quiz_{player_id}`
 
 ## Installation
 
-1. Clone this repository into your `custom_components` folder:
-   ```bash
-   git clone https://github.com/pheufr/ha-job-tracker.git custom_components/raven_castle_tools
-   ```
+### HACS (recommended)
+1. Add this repository to HACS as a custom repository
+2. Install "Raven Castle" from HACS
+3. Restart Home Assistant
+4. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle
 
+### Manual
+1. Copy `custom_components/raven_castle/` to your Home Assistant `custom_components` folder
 2. Restart Home Assistant
+3. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle
 
-3. Add the integration via Settings → Devices & Services → Create Integration
+### Migration from Job Manager
+If you previously used the `job_manager` integration, the Raven Castle integration will automatically migrate your data:
+- Entity IDs will be updated: `binary_sensor.job_manager_*` → `binary_sensor.rc_jobs_*`
+- All job data (schedules, last completed, etc.) is preserved
+- **Note**: Update any automations or scripts that reference the old entity IDs
 
-## Usage
+## RC Jobs
 
 ### Creating Jobs
 
-Jobs are created and managed through the Home Assistant UI or via YAML configuration.
+Jobs are created and managed through the Home Assistant UI via the integration's options flow.
 
 Each job supports:
 - **name**: Display name
@@ -39,7 +47,9 @@ Each job supports:
 - **image**: URL to an image to display in the picture card
 - **priority**: Integer priority level (higher = shown first in picture card)
 
-### Service: `trigger_job`
+### Services
+
+#### `raven_castle.trigger_job`
 
 Manually trigger a job to mark it as due:
 
@@ -49,7 +59,7 @@ data:
   entity_id: binary_sensor.rc_jobs_trash_day
 ```
 
-### Service: `complete_job`
+#### `raven_castle.complete_job`
 
 Mark a job as completed:
 
@@ -59,9 +69,9 @@ data:
   entity_id: binary_sensor.rc_jobs_trash_day
 ```
 
-### Picture Jobs Card
+### RC Jobs Card
 
-Add a custom Lovelace card to display job images:
+Add a custom Lovelace card to display job images. First, add the resource in Lovelace settings:
 
 ```yaml
 type: custom:rc-jobs-card
@@ -109,26 +119,13 @@ automation:
           entity_id: binary_sensor.rc_jobs_evening_routine
 ```
 
-## Job Configuration
-
-Each job has the following properties:
-
-- **name**: Display name of the job
-- **trigger_type**: Either `schedule` or `frequency`
-- **cron_expression** (for schedule type): Cron expression for when the job is due
-- **days_interval** (for frequency type): Number of days between job occurrences
-- **image** (optional): URL to image for picture card display
-- **priority** (default 0): Priority level for sorting in picture card
-- **last_completed**: Timestamp of when the job was last completed
-- **last_triggered**: Timestamp of when the job was last triggered
-
-### Trigger Types
+### Job Trigger Types
 
 #### Schedule (Cron-based)
 Use standard cron expressions:
 - `0 9 * * 1` - Every Monday at 9 AM
 - `0 0 1 * *` - First day of every month at midnight
-- `0 0 * * 2` - Every Tuesday at midnight (use for "last Tuesday", update cron as needed)
+- `0 0 * * 2` - Every Tuesday at midnight
 
 #### Frequency (Interval-based)
 Specify the number of days:
@@ -136,11 +133,11 @@ Specify the number of days:
 - `7` - Every 7 days (weekly)
 - `1` - Every day
 
-## State Attributes
+### State Attributes
 
-Each job binary sensor includes the following attributes:
+Each RC Jobs binary sensor includes the following attributes:
 
-- `trigger_type`: The type of trigger (schedule or frequency)
+- `trigger_type`: The type of trigger (`schedule` or `frequency`)
 - `cron_expression`: The cron expression (for schedule type)
 - `days_interval`: The interval in days (for frequency type)
 - `image`: URL to the job's image
