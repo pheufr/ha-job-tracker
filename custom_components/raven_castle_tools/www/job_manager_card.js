@@ -87,7 +87,7 @@ class JobManagerCard extends HTMLElement {
     if (!entityId) return;
 
     // Call complete_job service
-    this._hass.callService("job_manager", "complete_job", {
+    this._hass.callService("raven_castle_tools", "complete_job", {
       entity_id: entityId,
     });
 
@@ -99,4 +99,4 @@ class JobManagerCard extends HTMLElement {
   }
 }
 
-customElements.define("job-manager-card", JobManagerCard);
+customElements.define("rc-jobs-card", JobManagerCard);

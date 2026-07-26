@@ -1,34 +1,44 @@
-"""Binary sensor for Job Manager."""
+"""Binary sensor platform for RC Jobs."""
+
+from __future__ import annotations
+
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
+import voluptuous as vol
 from croniter import croniter
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 from homeassistant.util.dt import utcnow
 
 from .const import (
-    DOMAIN,
-    TRIGGER_TYPE_SCHEDULE,
-    TRIGGER_TYPE_FREQUENCY,
-    ATTR_TRIGGER_TYPE,
+    ATTR_CREATED,
     ATTR_CRON_EXPRESSION,
     ATTR_DAYS_INTERVAL,
-    ATTR_LAST_COMPLETED,
-    ATTR_CREATED,
-    ATTR_LAST_TRIGGERED,
     ATTR_IMAGE,
+    ATTR_LAST_COMPLETED,
+    ATTR_LAST_TRIGGERED,
     ATTR_PRIORITY,
-    SERVICE_TRIGGER_JOB,
+    ATTR_TRIGGER_TYPE,
+    DOMAIN,
+    PREFIX_JOBS,
     SERVICE_COMPLETE_JOB,
+    SERVICE_TRIGGER_JOB,
+    STORAGE_VERSION,
+    TRIGGER_TYPE_FREQUENCY,
+    TRIGGER_TYPE_SCHEDULE,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _jobs_storage_key(entry_id: str) -> str:
+    return f"{DOMAIN}.jobs_{entry_id}"
 
 
 async def async_setup_entry(
@@ -36,23 +46,51 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up binary sensors from a config entry."""
-    # Load jobs from storage
-    store = hass.helpers.storage.Store(hass, 1, f"{DOMAIN}.jobs_{config_entry.entry_id}")
+    """Set up job binary sensors from a config entry."""
+    store = hass.helpers.storage.Store(hass, STORAGE_VERSION, _jobs_storage_key(config_entry.entry_id))
     jobs_data = await store.async_load() or {"jobs": []}
 
-    entities = []
+    entities: list[JobBinarySensor] = []
     for job_data in jobs_data.get("jobs", []):
-        job = JobBinarySensor(hass, config_entry, job_data, store)
-        entities.append(job)
+        entities.append(JobBinarySensor(hass, config_entry, job_data, store))
 
     if entities:
         async_add_entities(entities)
 
-    # Store reference for adding new jobs dynamically
-    hass.data[DOMAIN][config_entry.entry_id]["async_add_entities"] = async_add_entities
-    hass.data[DOMAIN][config_entry.entry_id]["store"] = store
-    hass.data[DOMAIN][config_entry.entry_id]["jobs"] = {e.entity_id: e for e in entities}
+    hass.data[DOMAIN][config_entry.entry_id]["jobs_store"] = store
+    hass.data[DOMAIN][config_entry.entry_id]["jobs_entities"] = {
+        entity.entity_id: entity for entity in entities
+    }
+
+
+async def async_setup_jobs_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Register RC Jobs services."""
+
+    async def async_trigger_job(call: ServiceCall) -> None:
+        entity_id = call.data["entity_id"]
+        async_dispatcher_send(hass, f"{DOMAIN}_trigger_{entity_id}")
+
+    async def async_complete_job(call: ServiceCall) -> None:
+        entity_id = call.data["entity_id"]
+        async_dispatcher_send(hass, f"{DOMAIN}_complete_{entity_id}")
+
+    schema = vol.Schema({vol.Required("entity_id"): cv.entity_id})
+
+    if not hass.services.has_service(DOMAIN, SERVICE_TRIGGER_JOB):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_TRIGGER_JOB,
+            async_trigger_job,
+            schema=schema,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_COMPLETE_JOB):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_COMPLETE_JOB,
+            async_complete_job,
+            schema=schema,
+        )
 
 
 class JobBinarySensor(BinarySensorEntity):
@@ -67,22 +105,19 @@ class JobBinarySensor(BinarySensorEntity):
     ) -> None:
         """Initialize the job sensor."""
         self.hass = hass
-        self._config_entry = config_entry
         self._store = store
         self._job_data = job_data
 
         self._attr_name = job_data["name"]
-        self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}_{job_data['id']}"
-        self.entity_id = f"binary_sensor.{DOMAIN}_{job_data['id']}"
+        self._attr_unique_id = f"{DOMAIN}_jobs_{config_entry.entry_id}_{job_data['id']}"
+        self.entity_id = f"binary_sensor.{PREFIX_JOBS}_{job_data['id']}"
 
-        # Job configuration
         self._trigger_type = job_data["trigger_type"]
-        self._cron_expression = job_data.get("cron_expression")  # For schedule type
-        self._days_interval = job_data.get("days_interval")  # For frequency type
-        self._image = job_data.get("image")  # Image URL
-        self._priority = job_data.get("priority", 0)  # Priority level
+        self._cron_expression = job_data.get("cron_expression")
+        self._days_interval = job_data.get("days_interval")
+        self._image = job_data.get("image")
+        self._priority = job_data.get("priority", 0)
 
-        # Job state
         self._is_due = False
         self._created = self._ensure_timezone_aware_iso(
             job_data.get("created", datetime.isoformat(utcnow()))
@@ -96,20 +131,16 @@ class JobBinarySensor(BinarySensorEntity):
 
         @callback
         def async_trigger_job() -> None:
-            """Trigger job callback."""
             self._is_due = True
             self._last_triggered = datetime.isoformat(utcnow())
             self.async_write_ha_state()
-            _LOGGER.info(f"Job triggered: {self._attr_name}")
 
         @callback
         def async_complete_job() -> None:
-            """Complete job callback."""
             self._is_due = False
             self._last_completed = datetime.isoformat(utcnow())
             self.async_write_ha_state()
-            self._save_job_state()
-            _LOGGER.info(f"Job completed: {self._attr_name}")
+            self.hass.async_create_task(self._save_job_state())
 
         self.async_on_remove(
             async_dispatcher_connect(
@@ -159,22 +190,17 @@ class JobBinarySensor(BinarySensorEntity):
         return "problem"
 
     def _check_if_due(self) -> None:
-        """Check if the job should be marked as due."""
         if self._is_due:
-            # Already due, don't change state
             return
 
-        if self._trigger_type == TRIGGER_TYPE_SCHEDULE:
-            if self._is_due_by_schedule():
-                self._is_due = True
-                self._last_triggered = datetime.isoformat(utcnow())
-        elif self._trigger_type == TRIGGER_TYPE_FREQUENCY:
-            if self._is_due_by_frequency():
-                self._is_due = True
-                self._last_triggered = datetime.isoformat(utcnow())
+        if self._trigger_type == TRIGGER_TYPE_SCHEDULE and self._is_due_by_schedule():
+            self._is_due = True
+            self._last_triggered = datetime.isoformat(utcnow())
+        elif self._trigger_type == TRIGGER_TYPE_FREQUENCY and self._is_due_by_frequency():
+            self._is_due = True
+            self._last_triggered = datetime.isoformat(utcnow())
 
     def _is_due_by_schedule(self) -> bool:
-        """Check if job is due based on cron schedule."""
         if not self._cron_expression:
             return False
 
@@ -186,46 +212,38 @@ class JobBinarySensor(BinarySensorEntity):
             if self._last_triggered:
                 last_triggered = self._ensure_timezone_aware_datetime(self._last_triggered)
                 return last_triggered < last_occurrence
-            else:
-                # Never been triggered, check if it's past the first occurrence
-                return True
-        except Exception as e:
-            _LOGGER.error(f"Error checking schedule for {self._attr_name}: {e}")
+            return True
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.error("Error checking schedule for %s: %s", self._attr_name, err)
             return False
 
     def _is_due_by_frequency(self) -> bool:
-        """Check if job is due based on frequency interval."""
         if not self._days_interval or self._days_interval <= 0:
             return False
-
         if not self._last_completed:
-            # Never completed, so it's due
             return True
 
         try:
             last_completed = self._ensure_timezone_aware_datetime(self._last_completed)
             due_date = last_completed + timedelta(days=self._days_interval)
             return utcnow() >= due_date
-        except Exception as e:
-            _LOGGER.error(f"Error checking frequency for {self._attr_name}: {e}")
+        except Exception as err:  # pylint: disable=broad-except
+            _LOGGER.error("Error checking frequency for %s: %s", self._attr_name, err)
             return False
 
     def _ensure_timezone_aware_datetime(self, value: str) -> datetime:
-        """Return a timezone-aware datetime."""
         parsed = datetime.fromisoformat(value)
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=utcnow().tzinfo)
         return parsed
 
     def _ensure_timezone_aware_iso(self, value: str) -> str:
-        """Return an ISO datetime string with timezone information."""
         return self._ensure_timezone_aware_datetime(value).isoformat()
 
     async def _save_job_state(self) -> None:
-        """Save job state to storage."""
         jobs_data = await self._store.async_load() or {"jobs": []}
         job_index = next(
-            (i for i, j in enumerate(jobs_data["jobs"]) if j["id"] == self._job_data["id"]),
+            (index for index, job in enumerate(jobs_data["jobs"]) if job["id"] == self._job_data["id"]),
             None,
         )
 

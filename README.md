@@ -1,4 +1,4 @@
-# Home Assistant Job Manager
+# Home Assistant Raven Castle Tools
 
 A Home Assistant custom integration that allows you to manage recurring jobs/tasks. Each job is exposed as a binary sensor device that automatically tracks when it's due based on schedules or frequencies.
 
@@ -18,7 +18,7 @@ A Home Assistant custom integration that allows you to manage recurring jobs/tas
 
 1. Clone this repository into your `custom_components` folder:
    ```bash
-   git clone https://github.com/pheufr/ha-job-tracker.git custom_components/job_manager
+   git clone https://github.com/pheufr/ha-job-tracker.git custom_components/raven_castle_tools
    ```
 
 2. Restart Home Assistant
@@ -44,9 +44,9 @@ Each job supports:
 Manually trigger a job to mark it as due:
 
 ```yaml
-service: job_manager.trigger_job
+service: raven_castle_tools.trigger_job
 data:
-  entity_id: binary_sensor.job_manager_trash_day
+  entity_id: binary_sensor.rc_jobs_trash_day
 ```
 
 ### Service: `complete_job`
@@ -54,9 +54,9 @@ data:
 Mark a job as completed:
 
 ```yaml
-service: job_manager.complete_job
+service: raven_castle_tools.complete_job
 data:
-  entity_id: binary_sensor.job_manager_trash_day
+  entity_id: binary_sensor.rc_jobs_trash_day
 ```
 
 ### Picture Jobs Card
@@ -64,11 +64,11 @@ data:
 Add a custom Lovelace card to display job images:
 
 ```yaml
-type: custom:job-manager-card
+type: custom:rc-jobs-card
 job_entities:
-  - binary_sensor.job_manager_trash_day
-  - binary_sensor.job_manager_laundry
-  - binary_sensor.job_manager_yard_work
+  - binary_sensor.rc_jobs_trash_day
+  - binary_sensor.rc_jobs_laundry
+  - binary_sensor.rc_jobs_yard_work
 ```
 
 **Features:**
@@ -87,7 +87,7 @@ automation:
   - alias: "Notify when job is due"
     trigger:
       - platform: state
-        entity_id: binary_sensor.job_manager_trash_day
+        entity_id: binary_sensor.rc_jobs_trash_day
         to: "on"
     action:
       - service: notify.notify
@@ -104,9 +104,9 @@ automation:
       - platform: time
         at: "20:00:00"
     action:
-      - service: job_manager.complete_job
+      - service: raven_castle_tools.complete_job
         data:
-          entity_id: binary_sensor.job_manager_evening_routine
+          entity_id: binary_sensor.rc_jobs_evening_routine
 ```
 
 ## Job Configuration
@@ -152,3 +152,12 @@ Each job binary sensor includes the following attributes:
 ## License
 
 MIT
+
+
+## RC Quiz
+
+RC Quiz adds player-based score tracking with entities like `sensor.rc_quiz_<player_id>` and services such as `add_player`, `add_points`, `start_new_round`, and `start_new_quiz` under the `raven_castle_tools` domain.
+
+Two custom cards are included in `custom_components/raven_castle_tools/www`:
+- `rc-quiz-leaderboard-card.js` for public score display
+- `rc-quiz-master-card.js` for quiz control actions
