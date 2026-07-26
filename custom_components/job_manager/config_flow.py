@@ -38,11 +38,6 @@ class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class JobManagerOptionsFlow(config_entries.OptionsFlow):
     """Handle options for Job Manager."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-        self.hass = config_entry.hass
-
     async def async_step_init(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
@@ -262,13 +257,3 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
                 "edit_info": "Edit job details or select 'Delete Job' to remove it."
             },
         )
-
-
-@config_entries.register_options_flow
-class JobManagerOptionsFlowHandler(JobManagerOptionsFlow):
-    """Options flow for Job Manager."""
-
-    @staticmethod
-    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
-        """Create an options flow for Job Manager."""
-        return JobManagerOptionsFlow(config_entry)
