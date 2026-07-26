@@ -5,7 +5,7 @@ import uuid
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 
@@ -24,47 +24,82 @@ class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Handle the initial step."""
         if user_input is not None:
-            # Check if user wants to create a job or just set up the integration
-            if user_input.get("setup_integration"):
-                return self.async_create_entry(title="Job Manager", data={})
-            else:
-                # Go to job creation step
-                return await self.async_step_create_job()
+            return self.async_create_entry(title="Job Manager", data={})
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required("setup_integration", default=True): cv.boolean,
-            }),
+            data_schema=vol.Schema({}),
             description_placeholders={
-                "setup_info": "Select 'No' to create a job, or 'Yes' to just set up the integration."
+                "setup_info": "Job Manager configured. Manage jobs through Settings → Devices & Services → Job Manager → ⚙️ Options."
+            },
+        )
+
+
+class JobManagerOptionsFlow(config_entries.OptionsFlow):
+    """Handle options for Job Manager."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
+        self.hass = config_entry.hass
+
+    async def async_step_init(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        """Manage the options."""
+        return self.async_show_menu(
+            step_id="init",
+            menu_options=[
+                "manage_jobs",
+            ],
+            description_placeholders={
+                "manage_info": "Choose an action to manage your jobs."
+            },
+        )
+
+    async def async_step_manage_jobs(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        """Show menu to create or edit jobs."""
+        return self.async_show_menu(
+            step_id="manage_jobs",
+            menu_options=[
+                "create_job",
+                "list_jobs",
+            ],
+            description_placeholders={
+                "manage_info": "Choose to create a new job or edit existing jobs."
             },
         )
 
     async def async_step_create_job(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
-        """Handle job creation step."""
+        """Handle job creation."""
         errors = {}
 
         if user_input is not None:
             try:
-                # Validate input
                 if not user_input.get("name"):
                     errors["name"] = "name_required"
-                
-                if user_input.get("trigger_type") == TRIGGER_TYPE_SCHEDULE:
+                elif user_input.get("trigger_type") == TRIGGER_TYPE_SCHEDULE:
                     if not user_input.get("cron_expression"):
                         errors["cron_expression"] = "cron_required"
                 elif user_input.get("trigger_type") == TRIGGER_TYPE_FREQUENCY:
-                    if not user_input.get("days_interval"):
+                    if not user_input.get("days_interval") or user_input.get("days_interval") <= 0:
                         errors["days_interval"] = "days_required"
 
                 if not errors:
-                    # Store the job in Home Assistant storage
+                    # Load existing jobs
+                    store = self.hass.helpers.storage.Store(
+                        DOMAIN, f"jobs_{self.config_entry.entry_id}"
+                    )
+                    jobs_data = await store.async_load() or {"jobs": []}
+
+                    # Create new job
                     job_id = str(uuid.uuid4())[:8]
-                    job_data = {
-                        "id": job_data_id,
+                    new_job = {
+                        "id": job_id,
                         "name": user_input["name"],
                         "trigger_type": user_input["trigger_type"],
                         "cron_expression": user_input.get("cron_expression"),
@@ -72,17 +107,20 @@ class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         "image": user_input.get("image"),
                         "priority": user_input.get("priority", 0),
                     }
-                    
-                    _LOGGER.info(f"Job created: {job_data}")
+
+                    jobs_data["jobs"].append(new_job)
+                    await store.async_save(jobs_data)
+
+                    _LOGGER.info(f"Job created: {new_job['name']}")
                     return self.async_abort(reason="job_created")
 
             except Exception as e:
                 _LOGGER.error(f"Error creating job: {e}")
                 errors["base"] = "unknown"
 
-        trigger_type = "schedule"  # Default
+        trigger_type = user_input.get("trigger_type", TRIGGER_TYPE_SCHEDULE) if user_input else TRIGGER_TYPE_SCHEDULE
 
-        schema = {
+        schema_dict = {
             vol.Required("name"): cv.string,
             vol.Required("trigger_type", default=trigger_type): vol.In(
                 {TRIGGER_TYPE_SCHEDULE: "Schedule (Cron)", TRIGGER_TYPE_FREQUENCY: "Frequency (Days)"}
@@ -90,20 +128,147 @@ class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         if trigger_type == TRIGGER_TYPE_SCHEDULE:
-            schema[vol.Optional("cron_expression", default="0 0 * * *")] = cv.string
+            schema_dict[vol.Optional("cron_expression", default="0 0 * * *")] = cv.string
         else:
-            schema[vol.Optional("days_interval", default=7)] = cv.positive_int
+            schema_dict[vol.Optional("days_interval", default=7)] = cv.positive_int
 
-        schema.update({
+        schema_dict.update({
             vol.Optional("image"): cv.string,
             vol.Optional("priority", default=0): cv.integer,
         })
 
         return self.async_show_form(
             step_id="create_job",
-            data_schema=vol.Schema(schema),
+            data_schema=vol.Schema(schema_dict),
             errors=errors,
             description_placeholders={
                 "trigger_info": "Choose schedule (cron) or frequency (days interval)"
             },
         )
+
+    async def async_step_list_jobs(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        """Show list of jobs to edit or delete."""
+        store = self.hass.helpers.storage.Store(
+            DOMAIN, f"jobs_{self.config_entry.entry_id}"
+        )
+        jobs_data = await store.async_load() or {"jobs": []}
+        jobs = jobs_data.get("jobs", [])
+
+        if not jobs:
+            return self.async_abort(reason="no_jobs")
+
+        menu_options = {job["id"]: job["name"] for job in jobs}
+
+        if user_input is not None:
+            selected_job_id = user_input.get("job_id")
+            return await self.async_step_edit_job(job_id=selected_job_id)
+
+        return self.async_show_menu(
+            step_id="list_jobs",
+            menu_options=menu_options,
+            description_placeholders={
+                "jobs_info": "Select a job to edit or delete."
+            },
+        )
+
+    async def async_step_edit_job(
+        self, user_input: Optional[Dict[str, Any]] = None, job_id: Optional[str] = None
+    ) -> FlowResult:
+        """Handle job editing."""
+        if not job_id:
+            return self.async_abort(reason="job_not_found")
+
+        store = self.hass.helpers.storage.Store(
+            DOMAIN, f"jobs_{self.config_entry.entry_id}"
+        )
+        jobs_data = await store.async_load() or {"jobs": []}
+        jobs = jobs_data.get("jobs", [])
+
+        job = next((j for j in jobs if j["id"] == job_id), None)
+        if not job:
+            return self.async_abort(reason="job_not_found")
+
+        errors = {}
+
+        if user_input is not None:
+            if user_input.get("action") == "delete":
+                # Delete job
+                jobs_data["jobs"] = [j for j in jobs if j["id"] != job_id]
+                await store.async_save(jobs_data)
+                _LOGGER.info(f"Job deleted: {job['name']}")
+                return self.async_abort(reason="job_deleted")
+
+            elif user_input.get("action") == "update":
+                # Update job
+                try:
+                    if not user_input.get("name"):
+                        errors["name"] = "name_required"
+                    elif user_input.get("trigger_type") == TRIGGER_TYPE_SCHEDULE:
+                        if not user_input.get("cron_expression"):
+                            errors["cron_expression"] = "cron_required"
+                    elif user_input.get("trigger_type") == TRIGGER_TYPE_FREQUENCY:
+                        if not user_input.get("days_interval") or user_input.get("days_interval") <= 0:
+                            errors["days_interval"] = "days_required"
+
+                    if not errors:
+                        # Update the job
+                        job_index = next((i for i, j in enumerate(jobs) if j["id"] == job_id), None)
+                        if job_index is not None:
+                            jobs[job_index].update({
+                                "name": user_input["name"],
+                                "trigger_type": user_input["trigger_type"],
+                                "cron_expression": user_input.get("cron_expression"),
+                                "days_interval": user_input.get("days_interval"),
+                                "image": user_input.get("image"),
+                                "priority": user_input.get("priority", 0),
+                            })
+                            await store.async_save(jobs_data)
+                            _LOGGER.info(f"Job updated: {job['name']}")
+                            return self.async_abort(reason="job_updated")
+                except Exception as e:
+                    _LOGGER.error(f"Error updating job: {e}")
+                    errors["base"] = "unknown"
+
+        trigger_type = job.get("trigger_type", TRIGGER_TYPE_SCHEDULE)
+
+        schema_dict = {
+            vol.Required("name", default=job.get("name")): cv.string,
+            vol.Required("trigger_type", default=trigger_type): vol.In(
+                {TRIGGER_TYPE_SCHEDULE: "Schedule (Cron)", TRIGGER_TYPE_FREQUENCY: "Frequency (Days)"}
+            ),
+        }
+
+        if trigger_type == TRIGGER_TYPE_SCHEDULE:
+            schema_dict[vol.Optional("cron_expression", default=job.get("cron_expression", "0 0 * * *"))] = cv.string
+        else:
+            schema_dict[vol.Optional("days_interval", default=job.get("days_interval", 7))] = cv.positive_int
+
+        schema_dict.update({
+            vol.Optional("image", default=job.get("image", "")): cv.string,
+            vol.Optional("priority", default=job.get("priority", 0)): cv.integer,
+            vol.Required("action", default="update"): vol.In(
+                {"update": "Save Changes", "delete": "Delete Job"}
+            ),
+        })
+
+        return self.async_show_form(
+            step_id="edit_job",
+            data_schema=vol.Schema(schema_dict),
+            errors=errors,
+            description_placeholders={
+                "job_name": job.get("name"),
+                "edit_info": "Edit job details or select 'Delete Job' to remove it."
+            },
+        )
+
+
+@config_entries.register_options_flow
+class JobManagerOptionsFlowHandler(JobManagerOptionsFlow):
+    """Options flow for Job Manager."""
+
+    @staticmethod
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+        """Create an options flow for Job Manager."""
+        return JobManagerOptionsFlow(config_entry)
