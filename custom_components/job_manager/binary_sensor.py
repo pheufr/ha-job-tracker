@@ -22,6 +22,8 @@ from .const import (
     ATTR_LAST_COMPLETED,
     ATTR_CREATED,
     ATTR_LAST_TRIGGERED,
+    ATTR_IMAGE,
+    ATTR_PRIORITY,
     SERVICE_TRIGGER_JOB,
     SERVICE_COMPLETE_JOB,
 )
@@ -77,6 +79,8 @@ class JobBinarySensor(BinarySensorEntity):
         self._trigger_type = job_data["trigger_type"]
         self._cron_expression = job_data.get("cron_expression")  # For schedule type
         self._days_interval = job_data.get("days_interval")  # For frequency type
+        self._image = job_data.get("image")  # Image URL
+        self._priority = job_data.get("priority", 0)  # Priority level
 
         # Job state
         self._is_due = False
@@ -127,6 +131,8 @@ class JobBinarySensor(BinarySensorEntity):
             ATTR_LAST_COMPLETED: self._last_completed,
             ATTR_LAST_TRIGGERED: self._last_triggered,
             ATTR_CREATED: self._created,
+            ATTR_IMAGE: self._image,
+            ATTR_PRIORITY: self._priority,
         }
         if self._trigger_type == TRIGGER_TYPE_SCHEDULE:
             self._attr_extra_state_attributes[ATTR_CRON_EXPRESSION] = self._cron_expression

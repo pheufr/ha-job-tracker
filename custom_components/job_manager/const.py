@@ -13,6 +13,8 @@ ATTR_DAYS_INTERVAL = "days_interval"
 ATTR_LAST_COMPLETED = "last_completed"
 ATTR_CREATED = "created"
 ATTR_LAST_TRIGGERED = "last_triggered"
+ATTR_IMAGE = "image"
+ATTR_PRIORITY = "priority"
 
 # Service names
 SERVICE_TRIGGER_JOB = "trigger_job"

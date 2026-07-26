@@ -8,6 +8,6 @@
   "requirements": [
     "croniter==1.4.1"
   ],
-  "version": "0.1.0",
+  "version": "0.2.0",
   "issue_tracker": "https://github.com/pheufr/ha-job-tracker/issues"
 }

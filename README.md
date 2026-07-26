@@ -8,6 +8,9 @@ A Home Assistant custom integration that allows you to manage recurring jobs/tas
 - **Frequency-based triggers**: Mark as due every N days since last completion
 - **Manual triggers**: Use the `trigger_job` action to manually mark a job as due
 - **Manual completion**: Use the `complete_job` action to mark a job as completed
+- **Priority system**: Jobs have a priority level (displayed in picture card)
+- **Job images**: Assign images to jobs for visual display
+- **Picture Jobs card**: Custom Lovelace card displaying due job images sorted by priority
 - **Automations**: Integrate with Home Assistant automations to take actions when jobs become due
 - **Binary sensor devices**: Each job is exposed as a binary sensor (on = due, off = not due)
 
@@ -28,6 +31,14 @@ A Home Assistant custom integration that allows you to manage recurring jobs/tas
 
 Jobs are created and managed through the Home Assistant UI or via YAML configuration.
 
+Each job supports:
+- **name**: Display name
+- **trigger_type**: `schedule` or `frequency`
+- **cron_expression**: For schedule type (e.g., `0 0 1 * *` for 1st of month)
+- **days_interval**: For frequency type (e.g., `30` for every 30 days)
+- **image**: URL to an image to display in the picture card
+- **priority**: Integer priority level (higher = shown first in picture card)
+
 ### Service: `trigger_job`
 
 Manually trigger a job to mark it as due:
@@ -47,6 +58,25 @@ service: job_manager.complete_job
 data:
   entity_id: binary_sensor.job_manager_trash_day
 ```
+
+### Picture Jobs Card
+
+Add a custom Lovelace card to display job images:
+
+```yaml
+type: custom:job-manager-card
+job_entities:
+  - binary_sensor.job_manager_trash_day
+  - binary_sensor.job_manager_laundry
+  - binary_sensor.job_manager_yard_work
+```
+
+**Features:**
+- Shows only due jobs with assigned images
+- Sorted by priority (highest first)
+- Click on an image to complete the job
+- No borders or background, just images
+- Hover tooltip shows job name and priority
 
 ### Example Automation
 
@@ -87,6 +117,8 @@ Each job has the following properties:
 - **trigger_type**: Either `schedule` or `frequency`
 - **cron_expression** (for schedule type): Cron expression for when the job is due
 - **days_interval** (for frequency type): Number of days between job occurrences
+- **image** (optional): URL to image for picture card display
+- **priority** (default 0): Priority level for sorting in picture card
 - **last_completed**: Timestamp of when the job was last completed
 - **last_triggered**: Timestamp of when the job was last triggered
 
@@ -111,6 +143,8 @@ Each job binary sensor includes the following attributes:
 - `trigger_type`: The type of trigger (schedule or frequency)
 - `cron_expression`: The cron expression (for schedule type)
 - `days_interval`: The interval in days (for frequency type)
+- `image`: URL to the job's image
+- `priority`: Priority level for sorting
 - `last_completed`: ISO timestamp of last completion
 - `last_triggered`: ISO timestamp of last trigger
 - `created`: ISO timestamp when the job was created
