@@ -9,8 +9,6 @@ from homeassistant.const import (
     SERVICE_RELOAD,
 )
 
-from .config_flow import JobManagerOptionsFlow
-
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "job_manager"
@@ -93,12 +91,3 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
-
-
-@config_entries.register_options_flow
-class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Config flow for Job Manager."""
-
-    async_get_options_flow = staticmethod(
-        lambda config_entry: JobManagerOptionsFlow(config_entry)
-    )
