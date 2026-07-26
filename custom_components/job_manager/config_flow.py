@@ -29,9 +29,6 @@ class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({}),
-            description_placeholders={
-                "setup_info": "Job Manager configured. Manage jobs through Settings → Devices & Services → Job Manager → ⚙️ Options."
-            },
         )
 
     @staticmethod
@@ -53,9 +50,6 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
             menu_options=[
                 "manage_jobs",
             ],
-            description_placeholders={
-                "manage_info": "Choose an action to manage your jobs."
-            },
         )
 
     async def async_step_manage_jobs(
@@ -68,9 +62,6 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
                 "create_job",
                 "list_jobs",
             ],
-            description_placeholders={
-                "manage_info": "Choose to create a new job or edit existing jobs."
-            },
         )
 
     async def async_step_create_job(
@@ -135,16 +126,13 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
 
         schema_dict.update({
             vol.Optional("image"): cv.string,
-            vol.Optional("priority", default=0): cv.integer,
+            vol.Optional("priority", default=0): cv.positive_int,
         })
 
         return self.async_show_form(
             step_id="create_job",
             data_schema=vol.Schema(schema_dict),
             errors=errors,
-            description_placeholders={
-                "trigger_info": "Choose schedule (cron) or frequency (days interval)"
-            },
         )
 
     async def async_step_list_jobs(
@@ -169,9 +157,6 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_menu(
             step_id="list_jobs",
             menu_options=menu_options,
-            description_placeholders={
-                "jobs_info": "Select a job to edit or delete."
-            },
         )
 
     async def async_step_edit_job(
@@ -248,7 +233,7 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
 
         schema_dict.update({
             vol.Optional("image", default=job.get("image", "")): cv.string,
-            vol.Optional("priority", default=job.get("priority", 0)): cv.integer,
+            vol.Optional("priority", default=job.get("priority", 0)): cv.positive_int,
             vol.Required("action", default="update"): vol.In(
                 {"update": "Save Changes", "delete": "Delete Job"}
             ),
@@ -258,8 +243,4 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
             step_id="edit_job",
             data_schema=vol.Schema(schema_dict),
             errors=errors,
-            description_placeholders={
-                "job_name": job.get("name"),
-                "edit_info": "Edit job details or select 'Delete Job' to remove it."
-            },
         )
