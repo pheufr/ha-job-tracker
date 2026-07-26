@@ -84,7 +84,7 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
                 if not errors:
                     # Load existing jobs
                     store = self.hass.helpers.storage.Store(
-                        DOMAIN, f"jobs_{self.config_entry.entry_id}"
+                        1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
                     )
                     jobs_data = await store.async_load() or {"jobs": []}
 
@@ -140,7 +140,7 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Show list of jobs to edit or delete."""
         store = self.hass.helpers.storage.Store(
-            DOMAIN, f"jobs_{self.config_entry.entry_id}"
+            1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
         )
         jobs_data = await store.async_load() or {"jobs": []}
         jobs = jobs_data.get("jobs", [])
@@ -167,7 +167,7 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="job_not_found")
 
         store = self.hass.helpers.storage.Store(
-            DOMAIN, f"jobs_{self.config_entry.entry_id}"
+            1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
         )
         jobs_data = await store.async_load() or {"jobs": []}
         jobs = jobs_data.get("jobs", [])

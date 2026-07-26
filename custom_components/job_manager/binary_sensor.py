@@ -38,7 +38,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up binary sensors from a config entry."""
     # Load jobs from storage
-    store = hass.helpers.storage.Store(DOMAIN, f"jobs_{config_entry.entry_id}")
+    store = hass.helpers.storage.Store(hass, 1, f"{DOMAIN}.jobs_{config_entry.entry_id}")
     jobs_data = await store.async_load() or {"jobs": []}
 
     entities = []
@@ -84,7 +84,9 @@ class JobBinarySensor(BinarySensorEntity):
 
         # Job state
         self._is_due = False
-        self._created = job_data.get("created", datetime.isoformat(utcnow()))
+        self._created = self._ensure_timezone_aware_iso(
+            job_data.get("created", datetime.isoformat(utcnow()))
+        )
         self._last_completed = job_data.get("last_completed")
         self._last_triggered = job_data.get("last_triggered")
 
@@ -149,7 +151,8 @@ class JobBinarySensor(BinarySensorEntity):
     @property
     def icon(self) -> str:
         """Return the icon."""
-        return "mdi:clipboard-check" if self.is_on else "mdi:clipboard"
+        self._check_if_due()
+        return "mdi:clipboard-check" if self._is_due else "mdi:clipboard"
 
     @property
     def device_class(self) -> str:
@@ -179,11 +182,12 @@ class JobBinarySensor(BinarySensorEntity):
         try:
             now = utcnow()
             cron = croniter(self._cron_expression, now)
-            last_occurrence = cron.get_prev(datetime)
+            last_occurrence = cron.get_prev(ret_type=datetime)
 
             if self._last_triggered:
                 last_triggered = datetime.fromisoformat(self._last_triggered)
-                # If last trigger was before the last cron occurrence, it's due
+                if last_triggered.tzinfo is None:
+                    last_triggered = last_triggered.replace(tzinfo=utcnow().tzinfo)
                 return last_triggered < last_occurrence
             else:
                 # Never been triggered, check if it's past the first occurrence
@@ -203,11 +207,20 @@ class JobBinarySensor(BinarySensorEntity):
 
         try:
             last_completed = datetime.fromisoformat(self._last_completed)
+            if last_completed.tzinfo is None:
+                last_completed = last_completed.replace(tzinfo=utcnow().tzinfo)
             due_date = last_completed + timedelta(days=self._days_interval)
             return utcnow() >= due_date
         except Exception as e:
             _LOGGER.error(f"Error checking frequency for {self._attr_name}: {e}")
             return False
+
+    def _ensure_timezone_aware_iso(self, value: str) -> str:
+        """Return an ISO datetime string with timezone information."""
+        parsed = datetime.fromisoformat(value)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=utcnow().tzinfo)
+        return parsed.isoformat()
 
     async def _save_job_state(self) -> None:
         """Save job state to storage."""

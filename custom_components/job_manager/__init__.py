@@ -5,9 +5,11 @@ from typing import Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers import config_validation as cv
 from homeassistant.const import (
     SERVICE_RELOAD,
 )
+import voluptuous as vol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,7 +73,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             DOMAIN,
             SERVICE_TRIGGER_JOB,
             async_trigger_job,
-            schema=None,
+            schema=vol.Schema({
+                vol.Required("entity_id"): cv.entity_id,
+            }),
         )
 
     if not hass.services.has_service(DOMAIN, SERVICE_COMPLETE_JOB):
@@ -79,7 +83,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             DOMAIN,
             SERVICE_COMPLETE_JOB,
             async_complete_job,
-            schema=None,
+            schema=vol.Schema({
+                vol.Required("entity_id"): cv.entity_id,
+            }),
         )
 
     return True
