@@ -1,4 +1,4 @@
-class JobManagerCard extends HTMLElement {
+class RCJobsCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     this.updateCard();
@@ -99,4 +99,4 @@ class JobManagerCard extends HTMLElement {
   }
 }
 
-customElements.define("rc-jobs-card", JobManagerCard);
+customElements.define("rc-jobs-card", RCJobsCard);
