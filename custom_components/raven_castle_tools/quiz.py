@@ -339,7 +339,10 @@ def _store_entity_references(
 ) -> None:
     by_player = hass.data[DOMAIN][entry_id].setdefault("quiz_entities", {})
     for entity in entities:
-        player_entities = by_player.setdefault(entity.player_id, [])
+        player_id = getattr(entity, "player_id", None)
+        if not player_id:
+            continue
+        player_entities = by_player.setdefault(player_id, [])
         player_entities.append(entity)
 
 

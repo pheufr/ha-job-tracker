@@ -98,7 +98,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 1,
             )
         elif old_entity_id.startswith("binary_sensor.job_manager_"):
-            suffix = old_entity_id[len("binary_sensor.job_manager_") :]
+            suffix = old_entity_id[len("binary_sensor.job_manager_"):]
             new_entity_id = f"binary_sensor.rc_jobs_{suffix}"
 
         if new_entity_id != old_entity_id:
