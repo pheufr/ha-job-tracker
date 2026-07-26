@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Job Manager",
+        "description": "Configure the Job Manager integration"
+      }
+    }
+  },
+  "services": {
+    "trigger_job": {
+      "name": "Trigger Job",
+      "description": "Manually trigger a job to mark it as due",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The entity ID of the job to trigger"
+        }
+      }
+    },
+    "complete_job": {
+      "name": "Complete Job",
+      "description": "Mark a job as completed",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The entity ID of the job to complete"
+        }
+      }
+    }
+  }
+}
