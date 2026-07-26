@@ -1,0 +1,7 @@
+{
+  "name": "Job Manager",
+  "content_in_root": false,
+  "homeassistant": "2023.12.0",
+  "render_readme": true,
+  "requirements": ["croniter>=1.4.1"]
+}
