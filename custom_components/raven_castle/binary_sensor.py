@@ -1,4 +1,4 @@
-"""Binary sensor for Job Manager."""
+"""Binary sensor for RC Jobs (Raven Castle integration)."""
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Optional
@@ -14,6 +14,8 @@ from homeassistant.util.dt import utcnow
 
 from .const import (
     DOMAIN,
+    FEATURE_JOBS,
+    PREFIX_JOBS,
     TRIGGER_TYPE_SCHEDULE,
     TRIGGER_TYPE_FREQUENCY,
     ATTR_TRIGGER_TYPE,
@@ -36,7 +38,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up binary sensors from a config entry."""
+    """Set up RC Jobs binary sensors from a config entry."""
     # Load jobs from storage
     store = hass.helpers.storage.Store(hass, 1, f"{DOMAIN}.jobs_{config_entry.entry_id}")
     jobs_data = await store.async_load() or {"jobs": []}
@@ -56,7 +58,7 @@ async def async_setup_entry(
 
 
 class JobBinarySensor(BinarySensorEntity):
-    """Represents a job as a binary sensor (due/not due)."""
+    """Represents an RC Jobs task as a binary sensor (due/not due)."""
 
     def __init__(
         self,
@@ -65,15 +67,15 @@ class JobBinarySensor(BinarySensorEntity):
         job_data: dict,
         store: Any,
     ) -> None:
-        """Initialize the job sensor."""
+        """Initialize the RC Jobs sensor."""
         self.hass = hass
         self._config_entry = config_entry
         self._store = store
         self._job_data = job_data
 
         self._attr_name = job_data["name"]
-        self._attr_unique_id = f"{DOMAIN}_{config_entry.entry_id}_{job_data['id']}"
-        self.entity_id = f"binary_sensor.{DOMAIN}_{job_data['id']}"
+        self._attr_unique_id = f"{DOMAIN}_{FEATURE_JOBS}_{config_entry.entry_id}_{job_data['id']}"
+        self.entity_id = f"binary_sensor.{PREFIX_JOBS}_{job_data['id']}"
 
         # Job configuration
         self._trigger_type = job_data["trigger_type"]
@@ -100,7 +102,7 @@ class JobBinarySensor(BinarySensorEntity):
             self._is_due = True
             self._last_triggered = datetime.isoformat(utcnow())
             self.async_write_ha_state()
-            _LOGGER.info(f"Job triggered: {self._attr_name}")
+            _LOGGER.info("Job triggered: %s", self._attr_name)
 
         @callback
         def async_complete_job() -> None:
@@ -109,7 +111,7 @@ class JobBinarySensor(BinarySensorEntity):
             self._last_completed = datetime.isoformat(utcnow())
             self.async_write_ha_state()
             self._save_job_state()
-            _LOGGER.info(f"Job completed: {self._attr_name}")
+            _LOGGER.info("Job completed: %s", self._attr_name)
 
         self.async_on_remove(
             async_dispatcher_connect(
@@ -190,7 +192,7 @@ class JobBinarySensor(BinarySensorEntity):
                 # Never been triggered, check if it's past the first occurrence
                 return True
         except Exception as e:
-            _LOGGER.error(f"Error checking schedule for {self._attr_name}: {e}")
+            _LOGGER.error("Error checking schedule for %s: %s", self._attr_name, e)
             return False
 
     def _is_due_by_frequency(self) -> bool:
@@ -207,7 +209,7 @@ class JobBinarySensor(BinarySensorEntity):
             due_date = last_completed + timedelta(days=self._days_interval)
             return utcnow() >= due_date
         except Exception as e:
-            _LOGGER.error(f"Error checking frequency for {self._attr_name}: {e}")
+            _LOGGER.error("Error checking frequency for %s: %s", self._attr_name, e)
             return False
 
     def _ensure_timezone_aware_datetime(self, value: str) -> datetime:

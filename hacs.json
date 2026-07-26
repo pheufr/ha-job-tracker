@@ -1,7 +1,8 @@
 {
-  "name": "Job Manager",
+  "name": "Raven Castle",
   "content_in_root": false,
   "homeassistant": "2023.12.0",
   "render_readme": true,
+  "domains": ["binary_sensor", "sensor"],
   "requirements": ["croniter>=1.4.1"]
 }
