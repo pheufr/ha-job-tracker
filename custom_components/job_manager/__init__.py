@@ -5,7 +5,6 @@ from typing import Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.helpers.entity_registry import async_entries_for_config_entry
 from homeassistant.const import (
     SERVICE_RELOAD,
 )
@@ -32,6 +31,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Job Manager from a config entry."""
     hass.data[DOMAIN][entry.entry_id] = {}
 
+    # Set up options flow
+    entry.async_on_unload(entry.add_update_listener(async_update_listener))
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     # Register services
@@ -48,7 +50,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return
 
         _LOGGER.info(f"Triggering job: {job_entity_id}")
-        # Find and call the coordinator method
         from homeassistant.helpers.dispatcher import async_dispatcher_send
         async_dispatcher_send(hass, f"{DOMAIN}_trigger_{job_entity_id}")
 
@@ -65,25 +66,33 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             return
 
         _LOGGER.info(f"Completing job: {job_entity_id}")
-        # Find and call the coordinator method
         from homeassistant.helpers.dispatcher import async_dispatcher_send
         async_dispatcher_send(hass, f"{DOMAIN}_complete_{job_entity_id}")
 
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_TRIGGER_JOB,
-        async_trigger_job,
-        schema=None,
-    )
+    if not hass.services.has_service(DOMAIN, SERVICE_TRIGGER_JOB):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_TRIGGER_JOB,
+            async_trigger_job,
+            schema=None,
+        )
 
-    hass.services.async_register(
-        DOMAIN,
-        SERVICE_COMPLETE_JOB,
-        async_complete_job,
-        schema=None,
-    )
+    if not hass.services.has_service(DOMAIN, SERVICE_COMPLETE_JOB):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_COMPLETE_JOB,
+            async_complete_job,
+            schema=None,
+        )
 
     return True
+
+
+async def async_update_listener(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> None:
+    """Handle options update."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
