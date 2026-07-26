@@ -1,4 +1,4 @@
-"""Config flow for Job Manager."""
+"""Config flow for Raven Castle."""
 import logging
 from typing import Any, Dict, Optional
 import uuid
@@ -14,17 +14,17 @@ from .const import DOMAIN, TRIGGER_TYPE_SCHEDULE, TRIGGER_TYPE_FREQUENCY
 _LOGGER = logging.getLogger(__name__)
 
 
-class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Job Manager."""
+class RavenCastleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Raven Castle."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
         """Handle the initial step."""
         if user_input is not None:
-            return self.async_create_entry(title="Job Manager", data={})
+            return self.async_create_entry(title="Raven Castle", data={})
 
         return self.async_show_form(
             step_id="user",
@@ -35,11 +35,11 @@ class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
-        return JobManagerOptionsFlow()
+        return RavenCastleOptionsFlow()
 
 
-class JobManagerOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for Job Manager."""
+class RavenCastleOptionsFlow(config_entries.OptionsFlow):
+    """Handle options for Raven Castle."""
 
     async def async_step_init(
         self, user_input: Optional[Dict[str, Any]] = None
@@ -84,7 +84,7 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
                 if not errors:
                     # Load existing jobs
                     store = self.hass.helpers.storage.Store(
-                        1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
+                        self.hass, 1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
                     )
                     jobs_data = await store.async_load() or {"jobs": []}
 
@@ -103,11 +103,11 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
                     jobs_data["jobs"].append(new_job)
                     await store.async_save(jobs_data)
 
-                    _LOGGER.info(f"Job created: {new_job['name']}")
+                    _LOGGER.info("Job created: %s", new_job["name"])
                     return self.async_abort(reason="job_created")
 
             except Exception as e:
-                _LOGGER.error(f"Error creating job: {e}")
+                _LOGGER.error("Error creating job: %s", e)
                 errors["base"] = "unknown"
 
         trigger_type = user_input.get("trigger_type", TRIGGER_TYPE_SCHEDULE) if user_input else TRIGGER_TYPE_SCHEDULE
@@ -140,7 +140,7 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Show list of jobs to edit or delete."""
         store = self.hass.helpers.storage.Store(
-            1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
+            self.hass, 1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
         )
         jobs_data = await store.async_load() or {"jobs": []}
         jobs = jobs_data.get("jobs", [])
@@ -167,7 +167,7 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
             return self.async_abort(reason="job_not_found")
 
         store = self.hass.helpers.storage.Store(
-            1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
+            self.hass, 1, f"{DOMAIN}.jobs_{self.config_entry.entry_id}"
         )
         jobs_data = await store.async_load() or {"jobs": []}
         jobs = jobs_data.get("jobs", [])
@@ -183,7 +183,7 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
                 # Delete job
                 jobs_data["jobs"] = [j for j in jobs if j["id"] != job_id]
                 await store.async_save(jobs_data)
-                _LOGGER.info(f"Job deleted: {job['name']}")
+                _LOGGER.info("Job deleted: %s", job["name"])
                 return self.async_abort(reason="job_deleted")
 
             elif user_input.get("action") == "update":
@@ -211,10 +211,10 @@ class JobManagerOptionsFlow(config_entries.OptionsFlow):
                                 "priority": user_input.get("priority", 0),
                             })
                             await store.async_save(jobs_data)
-                            _LOGGER.info(f"Job updated: {job['name']}")
+                            _LOGGER.info("Job updated: %s", job["name"])
                             return self.async_abort(reason="job_updated")
                 except Exception as e:
-                    _LOGGER.error(f"Error updating job: {e}")
+                    _LOGGER.error("Error updating job: %s", e)
                     errors["base"] = "unknown"
 
         trigger_type = job.get("trigger_type", TRIGGER_TYPE_SCHEDULE)

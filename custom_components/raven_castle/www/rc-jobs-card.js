@@ -1,4 +1,4 @@
-class JobManagerCard extends HTMLElement {
+class RCJobsCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     this.updateCard();
@@ -55,11 +55,11 @@ class JobManagerCard extends HTMLElement {
     const jobsHtml = jobs
       .map(
         (job) => `
-      <div style="cursor: pointer; transition: opacity 0.2s;" 
+      <div style="cursor: pointer; transition: opacity 0.2s;"
            class="job-image-container"
            data-entity-id="${job.entityId}"
            title="${job.name} (Priority: ${job.priority})">
-        <img src="${job.image}" 
+        <img src="${job.image}"
              alt="${job.name}"
              style="max-width: 100%; height: auto; display: block; border-radius: 4px;"
              />
@@ -87,7 +87,7 @@ class JobManagerCard extends HTMLElement {
     if (!entityId) return;
 
     // Call complete_job service
-    this._hass.callService("job_manager", "complete_job", {
+    this._hass.callService("raven_castle", "complete_job", {
       entity_id: entityId,
     });
 
@@ -99,4 +99,4 @@ class JobManagerCard extends HTMLElement {
   }
 }
 
-customElements.define("job-manager-card", JobManagerCard);
+customElements.define("rc-jobs-card", RCJobsCard);
