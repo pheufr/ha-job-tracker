@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, Optional
 import uuid
 
@@ -12,6 +11,10 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.util.dt import utcnow
 
 from .const import DOMAIN, STORAGE_VERSION
+
+
+def _utcnow_iso() -> str:
+    return utcnow().isoformat()
 
 
 class QuizOptionsFlowMixin:
@@ -57,7 +60,7 @@ class QuizOptionsFlowMixin:
                         "current_round_score": 0,
                         "last_round_score": 0,
                         "enabled": True,
-                        "created": datetime.isoformat(utcnow()),
+                        "created": _utcnow_iso(),
                     }
                 )
 

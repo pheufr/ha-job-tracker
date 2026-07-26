@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import voluptuous as vol
-from croniter import croniter
+from croniter import CroniterBadCronError, croniter
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
@@ -213,7 +213,7 @@ class JobBinarySensor(BinarySensorEntity):
                 last_triggered = self._ensure_timezone_aware_datetime(self._last_triggered)
                 return last_triggered < last_occurrence
             return True
-        except Exception as err:  # pylint: disable=broad-except
+        except (CroniterBadCronError, ValueError, TypeError) as err:
             _LOGGER.error("Error checking schedule for %s: %s", self._attr_name, err)
             return False
 
@@ -227,7 +227,7 @@ class JobBinarySensor(BinarySensorEntity):
             last_completed = self._ensure_timezone_aware_datetime(self._last_completed)
             due_date = last_completed + timedelta(days=self._days_interval)
             return utcnow() >= due_date
-        except Exception as err:  # pylint: disable=broad-except
+        except (OverflowError, TypeError, ValueError) as err:
             _LOGGER.error("Error checking frequency for %s: %s", self._attr_name, err)
             return False
 

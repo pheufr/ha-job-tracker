@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Any
 import uuid
 
@@ -43,6 +42,10 @@ _LOGGER = logging.getLogger(__name__)
 QUIZ_SIGNAL_UPDATE = f"{DOMAIN}_quiz_update"
 
 
+def _utcnow_iso() -> str:
+    return utcnow().isoformat()
+
+
 def _quiz_storage_key(entry_id: str) -> str:
     return f"{DOMAIN}.quiz_{entry_id}"
 
@@ -63,7 +66,7 @@ def _normalize_players(players_data: dict[str, Any] | None) -> dict[str, dict[st
             "current_round_score": int(player.get("current_round_score", 0)),
             "last_round_score": int(player.get("last_round_score", 0)),
             "enabled": bool(player.get("enabled", False)),
-            "created": player.get("created") or datetime.isoformat(utcnow()),
+            "created": player.get("created") or _utcnow_iso(),
         }
     return players
 
@@ -136,7 +139,7 @@ async def async_setup_quiz_services(hass: HomeAssistant, entry: ConfigEntry) -> 
             "current_round_score": 0,
             "last_round_score": 0,
             "enabled": True,
-            "created": datetime.isoformat(utcnow()),
+            "created": _utcnow_iso(),
         }
 
         for entry_id, data in _iter_quiz_entries():
