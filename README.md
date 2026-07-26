@@ -10,7 +10,7 @@ Track and manage recurring jobs/tasks with customizable schedules or frequencies
 **Entity naming**: `binary_sensor.rc_jobs_{job_id}`
 
 ### RC Quiz ✅
-Interactive quiz system with player tracking, scores per round, and leaderboard cards.
+Interactive quiz system with player tracking, scores per round, and custom Lovelace cards.
 
 **Entity naming**: `sensor.rc_quiz_{player_id}`
 
@@ -28,7 +28,7 @@ Interactive quiz system with player tracking, scores per round, and leaderboard 
 3. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle Tools
 
 ### Migration from Job Manager
-If you previously used the `job_manager` integration, the Raven Castle Tools integration will automatically migrate your data:
+If you previously used the `job_manager` integration, Raven Castle Tools will automatically migrate your data:
 - Entity IDs will be updated: `binary_sensor.job_manager_*` → `binary_sensor.rc_jobs_*`
 - All job data (schedules, last completed, etc.) is preserved
 - **Note**: Update any automations or scripts that reference the old entity IDs

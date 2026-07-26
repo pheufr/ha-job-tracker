@@ -55,11 +55,11 @@ class RCJobsCard extends HTMLElement {
     const jobsHtml = jobs
       .map(
         (job) => `
-      <div style="cursor: pointer; transition: opacity 0.2s;"
+      <div style="cursor: pointer; transition: opacity 0.2s;" 
            class="job-image-container"
            data-entity-id="${job.entityId}"
            title="${job.name} (Priority: ${job.priority})">
-        <img src="${job.image}"
+        <img src="${job.image}" 
              alt="${job.name}"
              style="max-width: 100%; height: auto; display: block; border-radius: 4px;"
              />
