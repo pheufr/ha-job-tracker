@@ -9,8 +9,8 @@ Track and manage recurring jobs/tasks with customizable schedules or frequencies
 
 **Entity naming**: `binary_sensor.rc_jobs_{job_id}`
 
-### RC Quiz 🔜
-Interactive quiz system with player tracking (coming soon).
+### RC Quiz ✅
+Interactive quiz system with player tracking, scores per round, and custom Lovelace cards.
 
 **Entity naming**: `sensor.rc_quiz_{player_id}`
 
@@ -18,17 +18,17 @@ Interactive quiz system with player tracking (coming soon).
 
 ### HACS (recommended)
 1. Add this repository to HACS as a custom repository
-2. Install "Raven Castle" from HACS
+2. Install "Raven Castle Tools" from HACS
 3. Restart Home Assistant
-4. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle
+4. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle Tools
 
 ### Manual
-1. Copy `custom_components/raven_castle/` to your Home Assistant `custom_components` folder
+1. Copy `custom_components/raven_castle_tools/` to your Home Assistant `custom_components` folder
 2. Restart Home Assistant
-3. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle
+3. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle Tools
 
 ### Migration from Job Manager
-If you previously used the `job_manager` integration, the Raven Castle integration will automatically migrate your data:
+If you previously used the `job_manager` integration, Raven Castle Tools will automatically migrate your data:
 - Entity IDs will be updated: `binary_sensor.job_manager_*` → `binary_sensor.rc_jobs_*`
 - All job data (schedules, last completed, etc.) is preserved
 - **Note**: Update any automations or scripts that reference the old entity IDs
@@ -49,7 +49,7 @@ Each job supports:
 
 ### Services
 
-#### `raven_castle.trigger_job`
+#### `raven_castle_tools.trigger_job`
 
 Manually trigger a job to mark it as due:
 
@@ -59,7 +59,7 @@ data:
   entity_id: binary_sensor.rc_jobs_trash_day
 ```
 
-#### `raven_castle.complete_job`
+#### `raven_castle_tools.complete_job`
 
 Mark a job as completed:
 

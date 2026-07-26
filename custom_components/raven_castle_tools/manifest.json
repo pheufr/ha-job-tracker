@@ -4,11 +4,11 @@
   "name": "Raven Castle Tools",
   "codeowners": ["@pheufr"],
   "config_flow": true,
-  "documentation": "https://github.com/pheufr/ha-job-tracker",
+  "documentation": "https://github.com/pheufr/ha-raven-castle-tools",
   "requirements": [
     "croniter==1.4.1"
   ],
   "version": "0.5.0",
-  "issue_tracker": "https://github.com/pheufr/ha-job-tracker/issues",
+  "issue_tracker": "https://github.com/pheufr/ha-raven-castle-tools/issues",
   "iot_class": "local_polling"
 }
