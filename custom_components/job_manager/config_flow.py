@@ -44,6 +44,11 @@ class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class JobManagerOptionsFlow(config_entries.OptionsFlow):
     """Handle options for Job Manager."""
 
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        super().__init__()
+        self.config_entry = config_entry
+
     async def async_step_init(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:
