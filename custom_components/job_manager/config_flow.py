@@ -38,7 +38,7 @@ class JobManagerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
-        return JobManagerOptionsFlow(config_entry)
+        return JobManagerOptionsFlow()
 
 
 class JobManagerOptionsFlow(config_entries.OptionsFlow):
