@@ -37,7 +37,7 @@ If you previously used the `job_manager` integration, Raven Castle Tools will au
 
 ### Creating Jobs
 
-Jobs are created and managed through the Home Assistant UI via the integration's options flow.
+Jobs are created and managed through the Home Assistant UI via the integration's options flow (Settings → Devices & Services → Raven Castle Tools → Configure → Manage RC Jobs).
 
 Each job supports:
 - **name**: Display name
@@ -71,7 +71,10 @@ data:
 
 ### RC Jobs Card
 
-Add a custom Lovelace card to display job images. First, add the resource in Lovelace settings:
+Add a custom Lovelace card to display job images. First register the resource in Lovelace settings:
+`/local/raven_castle_tools/rc-jobs-card.js`
+
+Then use it in your dashboard:
 
 ```yaml
 type: custom:rc-jobs-card
@@ -85,39 +88,7 @@ job_entities:
 - Shows only due jobs with assigned images
 - Sorted by priority (highest first)
 - Click on an image to complete the job
-- No borders or background, just images
 - Hover tooltip shows job name and priority
-
-### Example Automation
-
-Trigger a notification when a job becomes due:
-
-```yaml
-automation:
-  - alias: "Notify when job is due"
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.rc_jobs_trash_day
-        to: "on"
-    action:
-      - service: notify.notify
-        data:
-          message: "Trash day is due!"
-```
-
-Automatically complete a job after an action:
-
-```yaml
-automation:
-  - alias: "Complete job after action"
-    trigger:
-      - platform: time
-        at: "20:00:00"
-    action:
-      - service: raven_castle_tools.complete_job
-        data:
-          entity_id: binary_sensor.rc_jobs_evening_routine
-```
 
 ### Job Trigger Types
 
@@ -146,15 +117,69 @@ Each RC Jobs binary sensor includes the following attributes:
 - `last_triggered`: ISO timestamp of last trigger
 - `created`: ISO timestamp when the job was created
 
+## RC Quiz
+
+RC Quiz adds player-based score tracking for quiz games.
+
+### Managing Players
+
+Players are managed through the integration's options flow (Settings → Devices & Services → Raven Castle Tools → Configure → Manage RC Quiz).
+
+Each player has:
+- **name**: Full name
+- **alias**: Display name shown on leaderboard
+- **photo**: URL or local path to player photo
+- **enabled**: Whether the player is active in the current quiz
+
+### Entities
+
+Per player, two sensors are created:
+- `sensor.rc_quiz_{player_id}` - Total score (with all player attributes)
+- `sensor.rc_quiz_{player_id}_round` - Current round score
+
+### Services
+
+All services are under the `raven_castle_tools` domain:
+
+| Service | Description |
+|---------|-------------|
+| `add_player` | Add a new quiz player |
+| `remove_player` | Remove a player permanently |
+| `enable_player` | Enable a player for the current quiz |
+| `disable_player` | Disable a player for the current quiz |
+| `add_points` | Add points to a player's round score |
+| `remove_points` | Remove points from a player's round score |
+| `start_new_round` | Finalise current round scores into totals and reset round |
+| `start_new_quiz` | Reset all scores to zero |
+| `reset_quiz` | Reset all scores and disable all players |
+
+### RC Quiz Cards
+
+Two custom Lovelace cards are included. Register these resources in Lovelace settings:
+- `/local/raven_castle_tools/rc-quiz-leaderboard-card.js`
+- `/local/raven_castle_tools/rc-quiz-master-card.js`
+
+#### Leaderboard Card
+
+```yaml
+type: custom:rc-quiz-leaderboard-card
+show_disabled: false
+max_players: 10
+```
+
+Shows players ordered by total score with medals (🥇🥈🥉), photos, alias, and scores.
+
+#### Quiz Master Card
+
+```yaml
+type: custom:rc-quiz-master-card
+point_buttons: [5, 10]
+compact: false
+show_photos: true
+```
+
+Shows all players alphabetically with controls to add/remove points, enable/disable players, and start new rounds.
+
 ## License
 
 MIT
-
-
-## RC Quiz
-
-RC Quiz adds player-based score tracking with entities like `sensor.rc_quiz_<player_id>` and services such as `add_player`, `add_points`, `start_new_round`, and `start_new_quiz` under the `raven_castle_tools` domain.
-
-Two custom cards are included in `custom_components/raven_castle_tools/www`:
-- `rc-quiz-leaderboard-card.js` for public score display
-- `rc-quiz-master-card.js` for quiz control actions

@@ -100,3 +100,10 @@ class RCJobsCard extends HTMLElement {
 }
 
 customElements.define("rc-jobs-card", RCJobsCard);
+
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: "rc-jobs-card",
+  name: "RC Jobs Card",
+  description: "Shows due RC Jobs with images",
+});
