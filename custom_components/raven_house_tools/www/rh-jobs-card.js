@@ -1,4 +1,10 @@
 ﻿class RHJobsCard extends HTMLElement {
+  constructor() {
+    super();
+    this._resolvedMediaUrls = new Map();
+    this._pendingResolutions = new Set();
+  }
+
   set hass(hass) {
     this._hass = hass;
     this.updateCard();
@@ -18,6 +24,58 @@
   _isDueState(state) {
     if (!state) return false;
     return !["off", "unavailable", "unknown", "none"].includes(state.state);
+  }
+
+  _orientation() {
+    return this._config.orientation === "horizontal" ? "horizontal" : "vertical";
+  }
+
+  _displayImage(image) {
+    if (typeof image !== "string") {
+      return "";
+    }
+    const trimmed = image.trim();
+    if (!trimmed) {
+      return "";
+    }
+
+    if (!trimmed.startsWith("media-source://")) {
+      return trimmed;
+    }
+
+    if (this._resolvedMediaUrls.has(trimmed)) {
+      return this._resolvedMediaUrls.get(trimmed) || "";
+    }
+
+    this._resolveMediaSource(trimmed);
+    return "";
+  }
+
+  _resolveMediaSource(mediaContentId) {
+    if (this._pendingResolutions.has(mediaContentId)) {
+      return;
+    }
+    if (!this._hass || typeof this._hass.callWS !== "function") {
+      return;
+    }
+
+    this._pendingResolutions.add(mediaContentId);
+    this._hass
+      .callWS({
+        type: "media_source/resolve_media",
+        media_content_id: mediaContentId,
+      })
+      .then((result) => {
+        const url = typeof result?.url === "string" ? result.url : "";
+        this._resolvedMediaUrls.set(mediaContentId, url);
+      })
+      .catch(() => {
+        this._resolvedMediaUrls.set(mediaContentId, "");
+      })
+      .finally(() => {
+        this._pendingResolutions.delete(mediaContentId);
+        this.updateCard();
+      });
   }
 
   _jobEntityIds() {
@@ -46,7 +104,7 @@
       if (!showAll && !isDue) continue;
 
       const attributes = state.attributes || {};
-      const image = attributes.image || "";
+      const image = this._displayImage(attributes.image || "");
       const priority = attributes.priority || 0;
 
       jobs.push({
@@ -68,19 +126,21 @@
   }
 
   _renderJobTile(job) {
+    const orientation = this._orientation();
+    const tileDirection = orientation === "horizontal" ? "row" : "column";
+    const tileWidth = orientation === "horizontal" ? "min-width:260px;" : "width:100%;";
+    const imageHtml =
+      job.image
+        ? `<img src="${job.image}" alt="${job.name}" style="width:${orientation === "horizontal" ? "72px" : "100%"};max-width:${orientation === "horizontal" ? "72px" : "320px"};height:${orientation === "horizontal" ? "72px" : "auto"};aspect-ratio:${orientation === "horizontal" ? "1 / 1" : "auto"};object-fit:cover;display:block;border-radius:10px;" onerror="this.style.display='none'" />`
+        : "";
     const baseStyle = job.isDue ? "" : "opacity:0.55;";
-    if (job.image) {
-      return `
-        <div style="cursor:pointer;transition:opacity 0.2s;${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" title="${job.name} (Priority: ${job.priority})">
-          <img src="${job.image}" alt="${job.name}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />
-        </div>
-      `;
-    }
-
     return `
-      <button style="cursor:pointer;border:0;border-radius:10px;padding:18px 16px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.25);font:inherit;text-align:left;min-width:160px;${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" title="${job.name} (Priority: ${job.priority})">
-        <div style="font-size:12px;opacity:0.7;margin-bottom:6px;">${job.isDue ? "Due" : "Complete"} | Priority ${job.priority}</div>
-        <div style="font-weight:600;">${job.name}</div>
+      <button style="cursor:pointer;border:0;border-radius:10px;padding:12px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.25);font:inherit;text-align:left;display:flex;gap:12px;align-items:${orientation === "horizontal" ? "center" : "flex-start"};flex-direction:${tileDirection};${tileWidth}${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" title="${job.name} (Priority: ${job.priority})">
+        ${imageHtml}
+        <div style="min-width:0;">
+          <div style="font-size:12px;opacity:0.7;margin-bottom:6px;">${job.isDue ? "Due" : "Complete"} | Priority ${job.priority}</div>
+          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${job.name}</div>
+        </div>
       </button>
     `;
   }
@@ -98,9 +158,15 @@
 
     const jobsHtml = jobs.map((job) => this._renderJobTile(job)).join("");
 
+    const orientation = this._orientation();
+    const listStyle =
+      orientation === "horizontal"
+        ? "display:flex;flex-wrap:wrap;gap:12px;padding:16px;align-items:flex-start;"
+        : "display:flex;flex-direction:column;gap:12px;padding:16px;";
+
     return `
       <ha-card${this._renderHeader()}>
-        <div style="display:flex;flex-wrap:wrap;gap:16px;padding:16px;align-items:flex-start;">
+        <div style="${listStyle}">
           ${jobsHtml}
         </div>
       </ha-card>

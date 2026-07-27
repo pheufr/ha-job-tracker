@@ -46,6 +46,8 @@ Jobs can be managed from the job device page using control entities.
 
 Jobs can also be created via the `raven_house_tools.add_job` service.
 
+To edit or delete an existing job, open the RH Jobs integration options and choose Manage Jobs (Edit/Delete).
+
 Each job supports:
 
 - `name`
@@ -105,10 +107,16 @@ The jobs card is auto-registered by the integration.
 
 ```yaml
 type: custom:rh-jobs-card
+orientation: vertical
 job_entities:
   - binary_sensor.rh_jobs_trash_day
   - binary_sensor.rh_jobs_laundry
 ```
+
+Jobs card layout options:
+
+- `orientation: vertical` (default) stacks due jobs top-to-bottom.
+- `orientation: horizontal` places jobs in a horizontal wrapping layout.
 
 ## Raven House Quiz
 

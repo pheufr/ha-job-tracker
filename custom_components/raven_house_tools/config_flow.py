@@ -35,6 +35,17 @@ def _normalize_media_value(value: Any) -> str:
     if isinstance(value, str):
         return value.strip()
     if isinstance(value, dict):
+        for key in ("url", "entity_picture", "path"):
+            candidate = value.get(key)
+            if isinstance(candidate, str):
+                return candidate.strip()
+
+        metadata = value.get("metadata")
+        if isinstance(metadata, dict):
+            thumbnail = metadata.get("thumbnail")
+            if isinstance(thumbnail, str):
+                return thumbnail.strip()
+
         media_id = value.get("media_content_id")
         if isinstance(media_id, str):
             return media_id.strip()
@@ -94,7 +105,10 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
         del user_input
         feature = get_entry_feature(self._config_entry)
         if feature == FEATURE_JOBS:
-            return await self.async_step_create_job()
+            return self.async_show_menu(
+                step_id="init",
+                menu_options=["create_job", "list_jobs"],
+            )
         if feature == FEATURE_QUIZ:
             return await self.async_step_add_player()
 

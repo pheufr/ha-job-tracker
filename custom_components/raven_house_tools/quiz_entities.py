@@ -70,10 +70,20 @@ def _normalize_media_value(value: Any) -> str:
     if isinstance(value, str):
         return value.strip()
     if isinstance(value, dict):
-        for key in ("media_content_id", "path", "url", "entity_picture"):
+        for key in ("url", "entity_picture", "path"):
             candidate = value.get(key)
             if isinstance(candidate, str):
                 return candidate.strip()
+
+        metadata = value.get("metadata")
+        if isinstance(metadata, dict):
+            thumbnail = metadata.get("thumbnail")
+            if isinstance(thumbnail, str):
+                return thumbnail.strip()
+
+        media_content_id = value.get("media_content_id")
+        if isinstance(media_content_id, str):
+            return media_content_id.strip()
     return ""
 
 

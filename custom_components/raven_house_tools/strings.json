@@ -20,6 +20,7 @@
         "title": "Raven House Tools",
         "menu_options": {
           "create_job": "Add Job",
+          "list_jobs": "Manage Jobs (Edit/Delete)",
           "add_player": "Add Player"
         }
       },

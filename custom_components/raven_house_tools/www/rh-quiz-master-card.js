@@ -1,4 +1,10 @@
 ﻿class RHQuizMasterCard extends HTMLElement {
+  constructor() {
+    super();
+    this._resolvedMediaUrls = new Map();
+    this._pendingResolutions = new Set();
+  }
+
   setConfig(config) {
     this._config = config || {};
     this._pointButtons = [5, 1, -1, -5];
@@ -54,10 +60,52 @@
 
   _renderPhoto(photo, name) {
     if (!this._config.show_photos) return "";
-    if (!photo) {
+    const resolvedPhoto = this._displayImage(photo);
+    if (!resolvedPhoto) {
       return `<div style="width:24px;height:24px;border-radius:50%;background:#999;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">${name.slice(0, 1).toUpperCase()}</div>`;
     }
-    return `<img src="${photo}" alt="${name}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" />`;
+    return `<img src="${resolvedPhoto}" alt="${name}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'" />`;
+  }
+
+  _displayImage(image) {
+    if (typeof image !== "string") {
+      return "";
+    }
+    const trimmed = image.trim();
+    if (!trimmed) {
+      return "";
+    }
+    if (!trimmed.startsWith("media-source://")) {
+      return trimmed;
+    }
+    if (this._resolvedMediaUrls.has(trimmed)) {
+      return this._resolvedMediaUrls.get(trimmed) || "";
+    }
+    this._resolveMediaSource(trimmed);
+    return "";
+  }
+
+  _resolveMediaSource(mediaContentId) {
+    if (this._pendingResolutions.has(mediaContentId)) {
+      return;
+    }
+    if (!this._hass || typeof this._hass.callWS !== "function") {
+      return;
+    }
+    this._pendingResolutions.add(mediaContentId);
+    this._hass
+      .callWS({ type: "media_source/resolve_media", media_content_id: mediaContentId })
+      .then((result) => {
+        const url = typeof result?.url === "string" ? result.url : "";
+        this._resolvedMediaUrls.set(mediaContentId, url);
+      })
+      .catch(() => {
+        this._resolvedMediaUrls.set(mediaContentId, "");
+      })
+      .finally(() => {
+        this._pendingResolutions.delete(mediaContentId);
+        this._render();
+      });
   }
 
   _row(player, compact) {
