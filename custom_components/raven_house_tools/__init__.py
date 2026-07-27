@@ -11,7 +11,7 @@ from .frontend import async_setup_frontend
 from .quiz_const import DOMAIN as QUIZ_DOMAIN
 from .quiz_entities import async_setup_quiz_services
 
-PLATFORMS = ["binary_sensor", "sensor", "switch", "text", "button"]
+PLATFORMS = ["binary_sensor", "sensor", "switch", "text", "button", "number", "select"]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -28,6 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(QUIZ_DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {}
     hass.data[QUIZ_DOMAIN][entry.entry_id] = {}
+    await async_setup_frontend(hass)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_jobs_services(hass)

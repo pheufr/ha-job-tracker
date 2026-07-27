@@ -31,18 +31,40 @@ def _integration_version() -> str:
         return "dev"
 
 
+def _assets_revision(static_path: Path) -> str:
+    """Build a cache-busting token from card file mtimes."""
+    timestamps: list[int] = []
+    for card_file in _CARD_FILES:
+        try:
+            timestamps.append(int((static_path / card_file).stat().st_mtime))
+        except OSError:
+            continue
+    if not timestamps:
+        return _integration_version()
+    return f"{_integration_version()}-{max(timestamps)}"
+
+
 async def async_setup_frontend(hass: HomeAssistant) -> None:
     """Register static paths and Lovelace module URLs for custom cards."""
     static_url = "/raven_house_tools"
     static_path = Path(__file__).parent / "www"
 
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(static_url, str(static_path), False)]
-    )
+    try:
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(static_url, str(static_path), False)]
+        )
+    except Exception as err:  # noqa: BLE001
+        # Happens when this URL is already registered during repeated setup paths.
+        _LOGGER.debug("Static path %s already registered: %s", static_url, err)
     _LOGGER.debug("Registered Raven House Tools card assets at %s", static_url)
-    version = _integration_version()
+    version = _assets_revision(static_path)
 
     for card_file in _CARD_FILES:
-        url = f"{static_url}/{card_file}?v={version}"
-        add_extra_js_url(hass, url)
-        _LOGGER.debug("Registered Lovelace module URL: %s", url)
+        versioned_url = f"{static_url}/{card_file}?v={version}"
+        add_extra_js_url(hass, versioned_url)
+        _LOGGER.debug("Registered Lovelace module URL: %s", versioned_url)
+
+        # Compatibility fallback for frontend builds that do not honor querystring resources.
+        plain_url = f"{static_url}/{card_file}"
+        add_extra_js_url(hass, plain_url)
+        _LOGGER.debug("Registered Lovelace module URL fallback: %s", plain_url)
