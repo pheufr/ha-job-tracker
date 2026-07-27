@@ -128,7 +128,7 @@ async def _play_media(
     media: str,
     *,
     enqueue: str | None = None,
-) -> None:
+) -> bool:
     """Play media on target entity."""
     payload: dict[str, Any] = {
         "entity_id": entity_id,
@@ -139,7 +139,26 @@ async def _play_media(
         payload["enqueue"] = enqueue
     else:
         payload["announce"] = False
-    await hass.services.async_call("media_player", "play_media", payload, blocking=True)
+
+    try:
+        await hass.services.async_call("media_player", "play_media", payload, blocking=True)
+        return bool(enqueue)
+    except Exception as err:  # noqa: BLE001
+        if enqueue and "enqueue_announce" in str(err):
+            fallback_payload: dict[str, Any] = {
+                "entity_id": entity_id,
+                "media_content_id": media,
+                "media_content_type": "music",
+                "announce": False,
+            }
+            await hass.services.async_call(
+                "media_player",
+                "play_media",
+                fallback_payload,
+                blocking=True,
+            )
+            return False
+        raise
 
 
 async def _next_track(hass: HomeAssistant, entity_id: str) -> None:
@@ -256,9 +275,16 @@ async def async_setup_soundboard_services(hass: HomeAssistant) -> None:
 
                     if session.connected and session.dead_air_media:
                         # Queue clip and dead-air then advance once to keep a warm session.
-                        await _play_media(hass, target, media, enqueue="next")
-                        await _play_media(hass, target, session.dead_air_media, enqueue="add")
-                        await _next_track(hass, target)
+                        queued_clip = await _play_media(hass, target, media, enqueue="next")
+                        if queued_clip:
+                            queued_dead_air = await _play_media(
+                                hass,
+                                target,
+                                session.dead_air_media,
+                                enqueue="add",
+                            )
+                            if queued_dead_air:
+                                await _next_track(hass, target)
                     else:
                         await _play_media(hass, target, media, enqueue="play")
                 else:
