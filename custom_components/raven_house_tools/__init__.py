@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import CONF_FEATURE, DOMAIN, FEATURE_BOTH
 from .entities import async_setup_jobs_services
 from .frontend import async_setup_frontend
 from .quiz_const import DOMAIN as QUIZ_DOMAIN
@@ -33,6 +33,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_jobs_services(hass)
     await async_setup_quiz_services(hass)
+    return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate legacy single-entry installs to explicit feature metadata."""
+    if CONF_FEATURE in entry.data:
+        return True
+
+    data = {**entry.data, CONF_FEATURE: FEATURE_BOTH}
+    hass.config_entries.async_update_entry(entry, data=data)
     return True
 
 

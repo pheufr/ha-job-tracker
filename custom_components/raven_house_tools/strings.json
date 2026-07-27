@@ -6,8 +6,11 @@
     },
     "step": {
       "user": {
-        "title": "Raven House Tools",
-        "description": "Configure Raven House Tools"
+        "title": "Add Raven House Tools Feature",
+        "description": "Choose which Raven House Tools feature to add.",
+        "data": {
+          "feature": "Feature"
+        }
       }
     }
   },
@@ -17,9 +20,7 @@
         "title": "Raven House Tools",
         "menu_options": {
           "create_job": "Add Job",
-          "list_jobs": "List Jobs",
-          "add_player": "Add Player",
-          "list_players": "List Players"
+          "add_player": "Add Player"
         }
       },
       "create_job": {
@@ -33,24 +34,12 @@
           "priority": "Priority"
         }
       },
-      "list_jobs": {
-        "title": "List Jobs",
-        "data": {
-          "job_id": "Job"
-        }
-      },
       "add_player": {
         "title": "Add Quiz Player",
         "data": {
           "name": "Name",
           "alias": "Alias",
           "photo": "Photo"
-        }
-      },
-      "list_players": {
-        "title": "List Quiz Players",
-        "data": {
-          "player_id": "Player"
         }
       },
       "edit_job": {

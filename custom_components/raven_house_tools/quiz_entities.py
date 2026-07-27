@@ -51,6 +51,7 @@ from .quiz_const import (
     SERVICE_UPDATE_PLAYER_ALIAS,
     SERVICE_UPDATE_PLAYER_PHOTO,
 )
+from .features import entry_id_supports_quiz
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -254,6 +255,8 @@ def _find_player_by_target(
     hass: HomeAssistant, entity_id: str | None, player_id: str | None
 ) -> tuple[str, dict[str, Any], dict[str, Any]] | None:
     for entry_id, data in hass.data.get(DOMAIN, {}).items():
+        if not entry_id_supports_quiz(hass, entry_id):
+            continue
         players = data.get("quiz_players", {})
         if player_id and player_id in players:
             return entry_id, data, players[player_id]
@@ -289,6 +292,8 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
         }
 
         for entry_id in hass.data.get(DOMAIN, {}):
+            if not entry_id_supports_quiz(hass, entry_id):
+                continue
             data = await _ensure_runtime(hass, entry_id)
             data["quiz_players"][player["id"]] = player
             await _save_players(hass, entry_id)
@@ -428,6 +433,8 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
     async def _start_new_round(call: ServiceCall) -> None:
         del call
         for entry_id in hass.data.get(DOMAIN, {}):
+            if not entry_id_supports_quiz(hass, entry_id):
+                continue
             data = await _ensure_runtime(hass, entry_id)
             for player in data["quiz_players"].values():
                 if not player.get("enabled"):
@@ -442,6 +449,8 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
     async def _start_new_quiz(call: ServiceCall) -> None:
         del call
         for entry_id in hass.data.get(DOMAIN, {}):
+            if not entry_id_supports_quiz(hass, entry_id):
+                continue
             data = await _ensure_runtime(hass, entry_id)
             for player in data["quiz_players"].values():
                 player[ATTR_TOTAL_SCORE] = 0
@@ -453,6 +462,8 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
     async def _reset_quiz(call: ServiceCall) -> None:
         del call
         for entry_id in hass.data.get(DOMAIN, {}):
+            if not entry_id_supports_quiz(hass, entry_id):
+                continue
             data = await _ensure_runtime(hass, entry_id)
             for player in data["quiz_players"].values():
                 player[ATTR_TOTAL_SCORE] = 0

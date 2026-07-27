@@ -2,6 +2,11 @@
 
 DOMAIN = "raven_house_tools"
 
+CONF_FEATURE = "feature"
+FEATURE_BOTH = "both"
+FEATURE_JOBS = "jobs"
+FEATURE_QUIZ = "quiz"
+
 PREFIX_JOBS = "rh_jobs"
 STORAGE_VERSION = 1
 

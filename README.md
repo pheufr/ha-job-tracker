@@ -2,10 +2,10 @@
 
 This repository ships a single HACS-installed Home Assistant integration, `raven_house_tools`, which is presented in Home Assistant as `Raven House Tools`.
 
-That integration exposes both feature areas:
+That integration exposes both feature areas as separate config entries:
 
-- Raven House Jobs
-- Raven House Quiz
+- `RH Jobs`
+- `RH Quiz`
 
 ## Installation
 
@@ -13,17 +13,17 @@ That integration exposes both feature areas:
 1. Add this repository as a custom repository in HACS.
 2. Install the repository.
 3. Restart Home Assistant.
-4. Add the `Raven House Tools` integration from Settings -> Devices & Services.
-5. Use the integration's device entities or services to manage Jobs and Quiz players.
+4. Add the `Raven House Tools` integration twice from Settings -> Devices & Services.
+5. Choose `RH Jobs` for job management and `RH Quiz` for quiz management.
 
 ### Manual
 1. Copy `custom_components/raven_house_tools` into your Home Assistant `custom_components` directory.
 2. Restart Home Assistant.
-3. Add the `Raven House Tools` integration from Settings -> Devices & Services.
+3. Add the `Raven House Tools` integration from Settings -> Devices & Services for each feature you want.
 
 ## Raven House Jobs
 
-Raven House Jobs tracks recurring household jobs as individual devices.
+The `RH Jobs` entry tracks recurring household jobs as individual devices.
 
 ### Device Model
 
@@ -86,7 +86,7 @@ job_entities:
 
 ## Raven House Quiz
 
-Raven House Quiz manages quiz participants as individual devices.
+The `RH Quiz` entry manages quiz participants as individual devices.
 
 ### Device Model
 
@@ -169,6 +169,7 @@ show_photos: true
 ## Notes
 
 - The HACS repository installs a single integration package because HACS only manages one `custom_components/<domain>` directory per integration repository.
+- Legacy installs created before the split keep working as a combined entry, but new installs should add separate `RH Jobs` and `RH Quiz` entries.
 - Both feature areas use local brand assets, so Home Assistant 2026.3 or newer is recommended.
 - If the custom cards or logos do not appear immediately after restart, perform a hard browser refresh.
 

@@ -20,15 +20,30 @@
     return !["off", "unavailable", "unknown", "none"].includes(state.state);
   }
 
+  _jobEntityIds() {
+    if (Array.isArray(this._config.job_entities) && this._config.job_entities.length) {
+      return this._config.job_entities;
+    }
+
+    return Object.entries(this._hass.states)
+      .filter(([entityId, state]) => entityId.startsWith("binary_sensor.rh_jobs_") && state?.attributes?.job_id)
+      .map(([entityId]) => entityId)
+      .sort();
+  }
+
   async updateCard() {
     if (!this._hass || !this._config) return;
 
-    const jobEntityIds = this._config.job_entities || [];
+    const jobEntityIds = this._jobEntityIds();
+    const showAll = Boolean(this._config.show_all);
     const jobs = [];
 
     for (const entityId of jobEntityIds) {
       const state = this._hass.states[entityId];
-      if (!this._isDueState(state)) continue;
+      if (!state) continue;
+
+      const isDue = this._isDueState(state);
+      if (!showAll && !isDue) continue;
 
       const attributes = state.attributes || {};
       const image = attributes.image || "";
@@ -37,12 +52,13 @@
       jobs.push({
         entityId,
         image,
+        isDue,
         priority,
         name: attributes.friendly_name || entityId,
       });
     }
 
-    jobs.sort((a, b) => b.priority - a.priority);
+    jobs.sort((a, b) => Number(b.isDue) - Number(a.isDue) || b.priority - a.priority || a.name.localeCompare(b.name));
     this.innerHTML = this.renderJobs(jobs);
   }
 
@@ -52,17 +68,18 @@
   }
 
   _renderJobTile(job) {
+    const baseStyle = job.isDue ? "" : "opacity:0.55;";
     if (job.image) {
       return `
-        <div style="cursor:pointer;transition:opacity 0.2s;" class="job-image-container" data-entity-id="${job.entityId}" title="${job.name} (Priority: ${job.priority})">
+        <div style="cursor:pointer;transition:opacity 0.2s;${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" title="${job.name} (Priority: ${job.priority})">
           <img src="${job.image}" alt="${job.name}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />
         </div>
       `;
     }
 
     return `
-      <button style="cursor:pointer;border:0;border-radius:10px;padding:18px 16px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.25);font:inherit;text-align:left;min-width:160px;" class="job-image-container" data-entity-id="${job.entityId}" title="${job.name} (Priority: ${job.priority})">
-        <div style="font-size:12px;opacity:0.7;margin-bottom:6px;">Priority ${job.priority}</div>
+      <button style="cursor:pointer;border:0;border-radius:10px;padding:18px 16px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.25);font:inherit;text-align:left;min-width:160px;${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" title="${job.name} (Priority: ${job.priority})">
+        <div style="font-size:12px;opacity:0.7;margin-bottom:6px;">${job.isDue ? "Due" : "Complete"} | Priority ${job.priority}</div>
         <div style="font-weight:600;">${job.name}</div>
       </button>
     `;

@@ -14,8 +14,17 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 from homeassistant.util.dt import utcnow
 
-from .const import DOMAIN, STORAGE_VERSION, TRIGGER_TYPE_FREQUENCY, TRIGGER_TYPE_SCHEDULE
+from .const import (
+    CONF_FEATURE,
+    DOMAIN,
+    FEATURE_JOBS,
+    FEATURE_QUIZ,
+    STORAGE_VERSION,
+    TRIGGER_TYPE_FREQUENCY,
+    TRIGGER_TYPE_SCHEDULE,
+)
 from .entities import _jobs_storage_key, async_sync_jobs_from_storage
+from .features import get_entry_feature
 from .quiz_entities import _quiz_storage_key, async_sync_players_from_storage
 
 
@@ -28,11 +37,27 @@ class RavenHouseJobsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
-        del user_input
-        if self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
+        if user_input is not None:
+            feature = user_input[CONF_FEATURE]
+            await self.async_set_unique_id(feature)
+            self._abort_if_unique_id_configured()
 
-        return self.async_create_entry(title="Raven House Tools", data={})
+            title = "RH Jobs" if feature == FEATURE_JOBS else "RH Quiz"
+            return self.async_create_entry(title=title, data={CONF_FEATURE: feature})
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_FEATURE): vol.In(
+                        {
+                            FEATURE_JOBS: "RH Jobs",
+                            FEATURE_QUIZ: "RH Quiz",
+                        }
+                    )
+                }
+            ),
+        )
 
     @staticmethod
     @callback
@@ -54,9 +79,15 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Manage jobs and quiz players."""
         del user_input
+        feature = get_entry_feature(self._config_entry)
+        if feature == FEATURE_JOBS:
+            return await self.async_step_create_job()
+        if feature == FEATURE_QUIZ:
+            return await self.async_step_add_player()
+
         return self.async_show_menu(
             step_id="init",
-            menu_options=["create_job", "list_jobs", "add_player", "list_players"],
+            menu_options=["create_job", "add_player"],
         )
 
     async def async_step_create_job(

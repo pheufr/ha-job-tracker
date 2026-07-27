@@ -4,7 +4,6 @@
   "name": "Raven House Tools",
   "codeowners": ["@pheufr"],
   "config_flow": true,
-  "single_config_entry": true,
   "documentation": "https://github.com/pheufr/ha-raven-house",
   "requirements": [
     "croniter==1.4.1"
