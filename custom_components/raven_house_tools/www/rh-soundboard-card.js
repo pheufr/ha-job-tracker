@@ -105,6 +105,22 @@ class RHSoundboardCard extends HTMLElement {
     await this._hass.callService("raven_house_tools", service, data);
   }
 
+  _serviceDef(domain, service) {
+    return this._hass?.services?.[domain]?.[service] || null;
+  }
+
+  _hasService(domain, service) {
+    return Boolean(this._serviceDef(domain, service));
+  }
+
+  _serviceHasField(domain, service, fieldName) {
+    const def = this._serviceDef(domain, service);
+    if (!def || !def.fields || typeof def.fields !== "object") {
+      return false;
+    }
+    return Object.prototype.hasOwnProperty.call(def.fields, fieldName);
+  }
+
   _statusText() {
     if (!this._selectedTarget) {
       return "Choose a media player";
@@ -140,10 +156,12 @@ class RHSoundboardCard extends HTMLElement {
         await this._call("soundboard_disconnect", { entity_id: target });
         this._connected = false;
       } else {
-        await this._call("soundboard_set_mode", {
-          entity_id: target,
-          mode: this._playMode,
-        });
+        if (this._hasService("raven_house_tools", "soundboard_set_mode")) {
+          await this._call("soundboard_set_mode", {
+            entity_id: target,
+            mode: this._playMode,
+          });
+        }
         await this._call("soundboard_connect", {
           entity_id: target,
           dead_air_media: this._config.dead_air_media || "",
@@ -165,13 +183,18 @@ class RHSoundboardCard extends HTMLElement {
       return;
     }
 
-    await this._call("soundboard_play_clip", {
+    const payload = {
       entity_id: target,
       media: clip.media,
-      mode: this._playMode,
       connected: this._playMode === "connected",
       dead_air_media: this._config.dead_air_media || "",
-    });
+    };
+
+    if (this._serviceHasField("raven_house_tools", "soundboard_play_clip", "mode")) {
+      payload.mode = this._playMode;
+    }
+
+    await this._call("soundboard_play_clip", payload);
   }
 
   _renderModeSelector() {
@@ -272,10 +295,12 @@ class RHSoundboardCard extends HTMLElement {
         this._selectedTarget = event.currentTarget.value || "";
         if (this._selectedTarget) {
           await this._call("soundboard_set_target", { entity_id: this._selectedTarget });
-          await this._call("soundboard_set_mode", {
-            entity_id: this._selectedTarget,
-            mode: this._playMode,
-          });
+          if (this._hasService("raven_house_tools", "soundboard_set_mode")) {
+            await this._call("soundboard_set_mode", {
+              entity_id: this._selectedTarget,
+              mode: this._playMode,
+            });
+          }
         }
         this._render();
       };
@@ -286,7 +311,7 @@ class RHSoundboardCard extends HTMLElement {
       modeSelect.onchange = async (event) => {
         const nextMode = String(event.currentTarget.value || "connected").toLowerCase();
         this._playMode = nextMode === "direct" ? "direct" : "connected";
-        if (this._selectedTarget) {
+        if (this._selectedTarget && this._hasService("raven_house_tools", "soundboard_set_mode")) {
           await this._call("soundboard_set_mode", {
             entity_id: this._selectedTarget,
             mode: this._playMode,
