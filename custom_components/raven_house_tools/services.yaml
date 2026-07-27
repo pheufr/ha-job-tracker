@@ -1,55 +1,55 @@
 ﻿trigger_job:
   description: Trigger a Raven House Job immediately
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: binary_sensor
   fields:
     entity_id:
       description: The primary job binary sensor entity ID to trigger
       example: "binary_sensor.rh_jobs_trash_day"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
 
 complete_job:
   description: Mark a Raven House Job as completed
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: binary_sensor
   fields:
     entity_id:
       description: The primary job binary sensor entity ID to complete
       example: "binary_sensor.rh_jobs_trash_day"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
 
 dismiss_job:
   description: Dismiss a Raven House Job without marking it completed
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: binary_sensor
   fields:
     entity_id:
       description: The primary job binary sensor entity ID to dismiss
       example: "binary_sensor.rh_jobs_trash_day"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
 
 rename_job:
   description: Rename a Raven House Job
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: binary_sensor
   fields:
     entity_id:
       description: The primary job binary sensor entity ID
       example: "binary_sensor.rh_jobs_trash_day"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
@@ -59,21 +59,23 @@ rename_job:
 
 update_job_image:
   description: Update a Raven House Job image using media picker/upload
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: binary_sensor
   fields:
     entity_id:
       description: The primary job binary sensor entity ID
       example: "binary_sensor.rh_jobs_trash_day"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
     image:
       description: Job image selected from media
       selector:
-        image: {}
+        media:
+          accept:
+            - image/*
 
 add_job:
   description: Add a Raven House Job
@@ -94,7 +96,9 @@ add_job:
       description: Optional image selected from media
       example: "/local/jobs/bins.png"
       selector:
-        image: {}
+        media:
+          accept:
+            - image/*
     priority:
       description: Priority value
       example: 0
@@ -112,60 +116,62 @@ add_player:
       description: Player photo selected from media
       example: "/local/players/alice.jpg"
       selector:
-        image: {}
+        media:
+          accept:
+            - image/*
 
 remove_player:
   description: Remove a player from Raven House Quiz permanently
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
 
 enable_player:
   description: Enable a player for the current quiz
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
 
 disable_player:
   description: Disable a player for the current quiz
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
 
 rename_player:
   description: Rename a quiz player
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -175,14 +181,14 @@ rename_player:
 
 update_player_alias:
   description: Update a quiz player alias
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -192,14 +198,14 @@ update_player_alias:
 
 update_player_photo:
   description: Update a quiz player image path
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -207,32 +213,34 @@ update_player_photo:
       description: New photo selected from media
       example: "/local/players/alice.jpg"
       selector:
-        image: {}
+        media:
+          accept:
+            - image/*
 
 reset_player_score:
   description: Reset one player's scores to zero
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
 
 add_points:
   description: Add points to a player's current round score
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -242,14 +250,14 @@ add_points:
 
 remove_points:
   description: Remove points from a player's current round score
-  target:
-    entity:
-      integration: raven_house_tools
-      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
       example: "sensor.rh_quiz_player1"
+      selector:
+        entity:
+          integration: raven_house_tools
+          domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"

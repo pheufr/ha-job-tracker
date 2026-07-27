@@ -45,6 +45,11 @@ def _assets_revision(static_path: Path) -> str:
     return f"{_integration_version()}-{max(timestamps)}"
 
 
+def _compute_assets_revision(static_path: Path) -> str:
+    """Compute frontend asset revision in a worker thread."""
+    return _assets_revision(static_path)
+
+
 async def async_setup_frontend(hass: HomeAssistant) -> None:
     """Register static paths and Lovelace module URLs for custom cards."""
     static_url = "/raven_house_tools"
@@ -59,7 +64,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
         # Happens when this URL is already registered during repeated setup paths.
         _LOGGER.debug("Static path %s already registered: %s", static_url, err)
     _LOGGER.debug("Registered Raven House Tools card assets at %s", static_url)
-    version = _assets_revision(static_path)
+    version = await hass.async_add_executor_job(_compute_assets_revision, static_path)
 
     for card_file in _CARD_FILES:
         versioned_absolute = f"{module_base_absolute}/{card_file}?v={version}"
