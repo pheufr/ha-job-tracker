@@ -155,9 +155,15 @@ All services are under the `raven_castle_tools` domain:
 
 ### RC Quiz Cards
 
-Two custom Lovelace cards are included. Register these resources in Lovelace settings:
-- `/local/raven_castle_tools/rc-quiz-leaderboard-card.js`
-- `/local/raven_castle_tools/rc-quiz-master-card.js`
+Three custom Lovelace cards are included and automatically registered with the HA frontend — no manual resource configuration needed.
+
+After installing the integration and restarting Home Assistant, the cards are available in Dashboard → Add Card:
+
+- **RC Jobs Card** (`rc-jobs-card`) — Shows due RC Jobs with images
+- **RC Quiz Leaderboard Card** (`rc-quiz-leaderboard-card`) — Shows players sorted by score
+- **RC Quiz Master Card** (`rc-quiz-master-card`) — Master control panel for adding/removing points
+
+> **Note**: If cards don't appear immediately after installation, perform a hard browser refresh (Ctrl+Shift+R / Cmd+Shift+R).
 
 #### Leaderboard Card
 
