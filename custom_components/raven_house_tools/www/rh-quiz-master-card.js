@@ -160,11 +160,15 @@
   }
 }
 
-customElements.define("rh-quiz-master-card", RHQuizMasterCard);
+if (!customElements.get("rh-quiz-master-card")) {
+  customElements.define("rh-quiz-master-card", RHQuizMasterCard);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "rh-quiz-master-card",
-  name: "RH Quiz Master Card",
-  description: "Master control panel for Raven House Quiz",
-});
+if (!window.customCards.find((card) => card.type === "rh-quiz-master-card")) {
+  window.customCards.push({
+    type: "rh-quiz-master-card",
+    name: "RH Quiz Master Card",
+    description: "Master control panel for Raven House Quiz",
+  });
+}

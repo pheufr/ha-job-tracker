@@ -91,11 +91,15 @@
   }
 }
 
-customElements.define("rh-quiz-leaderboard-card", RHQuizLeaderboardCard);
+if (!customElements.get("rh-quiz-leaderboard-card")) {
+  customElements.define("rh-quiz-leaderboard-card", RHQuizLeaderboardCard);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "rh-quiz-leaderboard-card",
-  name: "RH Quiz Leaderboard Card",
-  description: "Shows Raven House Quiz leaderboard sorted by score",
-});
+if (!window.customCards.find((card) => card.type === "rh-quiz-leaderboard-card")) {
+  window.customCards.push({
+    type: "rh-quiz-leaderboard-card",
+    name: "RH Quiz Leaderboard Card",
+    description: "Shows Raven House Quiz leaderboard sorted by score",
+  });
+}

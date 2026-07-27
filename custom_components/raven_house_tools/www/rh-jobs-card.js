@@ -89,11 +89,15 @@
   }
 }
 
-customElements.define("rh-jobs-card", RHJobsCard);
+if (!customElements.get("rh-jobs-card")) {
+  customElements.define("rh-jobs-card", RHJobsCard);
+}
 
 window.customCards = window.customCards || [];
-window.customCards.push({
-  type: "rh-jobs-card",
-  name: "RH Jobs Card",
-  description: "Shows due Raven House Jobs with images",
-});
+if (!window.customCards.find((card) => card.type === "rh-jobs-card")) {
+  window.customCards.push({
+    type: "rh-jobs-card",
+    name: "RH Jobs Card",
+    description: "Shows due Raven House Jobs with images",
+  });
+}
