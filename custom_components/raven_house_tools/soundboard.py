@@ -134,10 +134,11 @@ async def _play_media(
         "entity_id": entity_id,
         "media_content_id": media,
         "media_content_type": "music",
-        "announce": False,
     }
     if enqueue:
         payload["enqueue"] = enqueue
+    else:
+        payload["announce"] = False
     await hass.services.async_call("media_player", "play_media", payload, blocking=True)
 
 
