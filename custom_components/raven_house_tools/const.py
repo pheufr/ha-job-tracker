@@ -33,4 +33,9 @@ SERVICE_RENAME_JOB = "rename_job"
 SERVICE_UPDATE_JOB_IMAGE = "update_job_image"
 SERVICE_ADD_JOB = "add_job"
 
+SERVICE_SOUNDBOARD_CONNECT = "soundboard_connect"
+SERVICE_SOUNDBOARD_DISCONNECT = "soundboard_disconnect"
+SERVICE_SOUNDBOARD_PLAY_CLIP = "soundboard_play_clip"
+SERVICE_SOUNDBOARD_SET_TARGET = "soundboard_set_target"
+
 JOBS_SIGNAL_UPDATE = f"{DOMAIN}_job_update"

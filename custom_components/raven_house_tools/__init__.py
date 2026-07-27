@@ -10,6 +10,7 @@ from .entities import async_setup_jobs_services
 from .frontend import async_setup_frontend
 from .quiz_const import DOMAIN as QUIZ_DOMAIN
 from .quiz_entities import async_setup_quiz_services
+from .soundboard import async_setup_soundboard_services, async_unload_soundboard
 
 PLATFORMS = ["binary_sensor", "sensor", "switch", "text", "button", "number", "select"]
 
@@ -19,6 +20,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data.setdefault(QUIZ_DOMAIN, {})
     await async_setup_frontend(hass)
+    await async_setup_soundboard_services(hass)
     return True
 
 
@@ -33,6 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await async_setup_jobs_services(hass)
     await async_setup_quiz_services(hass)
+    await async_setup_soundboard_services(hass)
     return True
 
 
@@ -54,4 +57,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     hass.data.get(QUIZ_DOMAIN, {}).pop(entry.entry_id, None)
+
+    remaining_entries = [
+        loaded_entry
+        for loaded_entry in hass.config_entries.async_entries(DOMAIN)
+        if loaded_entry.entry_id != entry.entry_id
+    ]
+    if not remaining_entries:
+        await async_unload_soundboard(hass)
     return True

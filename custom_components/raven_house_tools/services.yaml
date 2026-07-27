@@ -287,3 +287,74 @@ start_new_quiz:
 
 reset_quiz:
   description: Reset all scores and disable all players
+
+soundboard_connect:
+  description: Connect a soundboard playback session to a media player
+  fields:
+    entity_id:
+      description: Target media player entity ID
+      example: "media_player.living_room_speaker"
+      selector:
+        entity:
+          filter:
+            - domain: media_player
+    dead_air_media:
+      description: Optional dead-air media source used to keep a warm session
+      example: "media-source://media_source/local/soundboard/dead_air.mp3"
+      selector:
+        media:
+          accept:
+            - audio/*
+
+soundboard_disconnect:
+  description: Disconnect the soundboard playback session
+  fields:
+    entity_id:
+      description: Optional media player entity ID override
+      example: "media_player.living_room_speaker"
+      selector:
+        entity:
+          filter:
+            - domain: media_player
+
+soundboard_play_clip:
+  description: Play one soundboard clip on the selected media player
+  fields:
+    entity_id:
+      description: Target media player entity ID
+      example: "media_player.living_room_speaker"
+      selector:
+        entity:
+          filter:
+            - domain: media_player
+    media:
+      description: Clip media path or media-source identifier
+      example: "media-source://media_source/local/sfx/airhorn.mp3"
+      selector:
+        media:
+          accept:
+            - audio/*
+    connected:
+      description: Use connected-session queue mode
+      example: true
+      default: false
+      selector:
+        boolean:
+    dead_air_media:
+      description: Optional dead-air media used between clips in connected mode
+      example: "media-source://media_source/local/soundboard/dead_air.mp3"
+      selector:
+        media:
+          accept:
+            - audio/*
+
+soundboard_set_target:
+  description: Set the default media player target for the soundboard session
+  fields:
+    entity_id:
+      description: Target media player entity ID
+      example: "media_player.living_room_speaker"
+      selector:
+        entity:
+          filter:
+            - domain: media_player

@@ -225,6 +225,55 @@ compact: false
 show_photos: true
 ```
 
+## Raven House Soundboard
+
+The Soundboard feature adds a custom card and services for low-latency short audio effects to media players.
+
+### Services
+
+Service domain: `raven_house_tools`
+
+- `soundboard_set_target`
+- `soundboard_connect`
+- `soundboard_disconnect`
+- `soundboard_play_clip`
+
+Recommended flow:
+
+1. Set or select a target media player.
+2. Connect once (optionally with a `dead_air_media` clip).
+3. Trigger clips repeatedly.
+4. Disconnect when done.
+
+### Soundboard Card
+
+The soundboard card is auto-registered by the integration.
+
+```yaml
+type: custom:rh-soundboard-card
+title: RH Soundboard
+columns: 5
+target: media_player.living_room_speaker
+allow_target_switch: true
+dead_air_media: media-source://media_source/local/soundboard/dead_air.mp3
+clips:
+  - id: air_horn
+    label: Air Horn
+    icon: mdi:bullhorn
+    media: media-source://media_source/local/sfx/air_horn.mp3
+  - id: applause
+    label: Applause
+    icon: mdi:hand-clap
+    media: media-source://media_source/local/sfx/applause.mp3
+```
+
+Clip fields:
+
+- `id`: stable identifier for the button
+- `label`: button text
+- `icon`: Material Design icon
+- `media`: media-source or URL/path to an audio file
+
 ## Notes
 
 - The HACS repository installs a single integration package because HACS only manages one `custom_components/<domain>` directory per integration repository.
