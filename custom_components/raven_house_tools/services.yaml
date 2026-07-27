@@ -6,8 +6,9 @@
       example: "binary_sensor.rh_jobs_trash_day"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: binary_sensor
+          filter:
+            - integration: raven_house_tools
+              domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
@@ -20,8 +21,9 @@ complete_job:
       example: "binary_sensor.rh_jobs_trash_day"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: binary_sensor
+          filter:
+            - integration: raven_house_tools
+              domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
@@ -34,8 +36,9 @@ dismiss_job:
       example: "binary_sensor.rh_jobs_trash_day"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: binary_sensor
+          filter:
+            - integration: raven_house_tools
+              domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
@@ -48,8 +51,9 @@ rename_job:
       example: "binary_sensor.rh_jobs_trash_day"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: binary_sensor
+          filter:
+            - integration: raven_house_tools
+              domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
@@ -65,8 +69,9 @@ update_job_image:
       example: "binary_sensor.rh_jobs_trash_day"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: binary_sensor
+          filter:
+            - integration: raven_house_tools
+              domain: binary_sensor
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
@@ -128,8 +133,9 @@ remove_player:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -142,8 +148,9 @@ enable_player:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -156,8 +163,9 @@ disable_player:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -170,8 +178,9 @@ rename_player:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -187,8 +196,9 @@ update_player_alias:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -204,8 +214,9 @@ update_player_photo:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -225,8 +236,9 @@ reset_player_score:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -239,8 +251,9 @@ add_points:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -256,8 +269,9 @@ remove_points:
       example: "sensor.rh_quiz_player1"
       selector:
         entity:
-          integration: raven_house_tools
-          domain: sensor
+          filter:
+            - integration: raven_house_tools
+              domain: sensor
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"

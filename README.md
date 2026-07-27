@@ -85,6 +85,20 @@ data:
 
 Use the Actions/Services UI target picker for the job entity and image picker for `image`.
 
+How to upload a new image for selection:
+
+1. In Home Assistant, open Media -> My media.
+2. Choose or create a folder (for example `jobs`).
+3. Click Upload and upload the image file.
+4. Return to the action/service form and pick that image from the media browser.
+
+If you do not see Create folder or Upload in My media:
+
+1. Verify the Local Media integration is installed and loaded.
+2. Place files directly in your Home Assistant config at `/config/media/jobs/` (or another folder under `/config/media/`).
+3. Restart Home Assistant, then reopen the media picker.
+4. Select the image from the media browser, or provide `/media/local/jobs/<filename>` as the value.
+
 ### Jobs Card
 
 The jobs card is auto-registered by the integration.
@@ -167,6 +181,20 @@ data:
 ```
 
 Use the Actions/Services UI target picker for the player entity and image picker for `photo`.
+
+How to upload a new player photo:
+
+1. In Home Assistant, open Media -> My media.
+2. Choose or create a folder (for example `players`).
+3. Click Upload and upload the image file.
+4. Return to the action/service form and pick that image from the media browser.
+
+If you do not see Create folder or Upload in My media:
+
+1. Verify the Local Media integration is installed and loaded.
+2. Place files directly in your Home Assistant config at `/config/media/players/` (or another folder under `/config/media/`).
+3. Restart Home Assistant, then reopen the media picker.
+4. Select the image from the media browser, or provide `/media/local/players/<filename>` as the value.
 
 ### Quiz Cards
 

@@ -56,6 +56,15 @@ from .features import entry_id_supports_jobs
 _LOGGER = logging.getLogger(__name__)
 
 
+MEDIA_SELECTOR_SCHEMA = vol.Schema(
+    {
+        vol.Required("media_content_id"): cv.string,
+        vol.Optional("media_content_type"): cv.string,
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
+
 def _normalize_media_value(value: Any) -> str:
     """Normalize media selector output into a storable path/URL."""
     if isinstance(value, str):
@@ -509,10 +518,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
             vol.Optional("days_interval"): cv.positive_int,
             vol.Optional("image", default=""): vol.Any(
                 cv.string,
-                {
-                    vol.Required("media_content_id"): cv.string,
-                    vol.Optional("media_content_type"): cv.string,
-                },
+                MEDIA_SELECTOR_SCHEMA,
             ),
             vol.Optional("priority", default=0): vol.Coerce(int),
         }
@@ -530,10 +536,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
             vol.Optional("job_id"): cv.string,
             vol.Required("image"): vol.Any(
                 cv.string,
-                {
-                    vol.Required("media_content_id"): cv.string,
-                    vol.Optional("media_content_type"): cv.string,
-                },
+                MEDIA_SELECTOR_SCHEMA,
             ),
         }
     )

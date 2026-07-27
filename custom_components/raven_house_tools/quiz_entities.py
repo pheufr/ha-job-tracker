@@ -56,6 +56,15 @@ from .features import entry_id_supports_quiz
 _LOGGER = logging.getLogger(__name__)
 
 
+MEDIA_SELECTOR_SCHEMA = vol.Schema(
+    {
+        vol.Required("media_content_id"): cv.string,
+        vol.Optional("media_content_type"): cv.string,
+    },
+    extra=vol.ALLOW_EXTRA,
+)
+
+
 def _normalize_media_value(value: Any) -> str:
     """Normalize media selector output into a storable path/URL."""
     if isinstance(value, str):
@@ -524,10 +533,7 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
             vol.Optional("player_id"): cv.string,
             vol.Required("photo"): vol.Any(
                 cv.string,
-                {
-                    vol.Required("media_content_id"): cv.string,
-                    vol.Optional("media_content_type"): cv.string,
-                },
+                MEDIA_SELECTOR_SCHEMA,
             ),
         }
     )
@@ -543,10 +549,7 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
                     vol.Required("alias"): cv.string,
                     vol.Optional("photo", default=""): vol.Any(
                         cv.string,
-                        {
-                            vol.Required("media_content_id"): cv.string,
-                            vol.Optional("media_content_type"): cv.string,
-                        },
+                        MEDIA_SELECTOR_SCHEMA,
                     ),
                 }
             ),
