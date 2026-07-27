@@ -2,6 +2,7 @@
   description: Trigger a Raven House Job immediately
   target:
     entity:
+      integration: raven_house_tools
       domain: binary_sensor
   fields:
     entity_id:
@@ -15,6 +16,7 @@ complete_job:
   description: Mark a Raven House Job as completed
   target:
     entity:
+      integration: raven_house_tools
       domain: binary_sensor
   fields:
     entity_id:
@@ -28,6 +30,7 @@ dismiss_job:
   description: Dismiss a Raven House Job without marking it completed
   target:
     entity:
+      integration: raven_house_tools
       domain: binary_sensor
   fields:
     entity_id:
@@ -41,6 +44,7 @@ rename_job:
   description: Rename a Raven House Job
   target:
     entity:
+      integration: raven_house_tools
       domain: binary_sensor
   fields:
     entity_id:
@@ -57,6 +61,7 @@ update_job_image:
   description: Update a Raven House Job image using media picker/upload
   target:
     entity:
+      integration: raven_house_tools
       domain: binary_sensor
   fields:
     entity_id:
@@ -113,12 +118,8 @@ remove_player:
   description: Remove a player from Raven House Quiz permanently
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
@@ -131,12 +132,8 @@ enable_player:
   description: Enable a player for the current quiz
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
@@ -149,12 +146,8 @@ disable_player:
   description: Disable a player for the current quiz
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
@@ -167,12 +160,8 @@ rename_player:
   description: Rename a quiz player
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
@@ -188,12 +177,8 @@ update_player_alias:
   description: Update a quiz player alias
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
@@ -209,12 +194,8 @@ update_player_photo:
   description: Update a quiz player image path
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
@@ -232,12 +213,8 @@ reset_player_score:
   description: Reset one player's scores to zero
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
@@ -250,12 +227,8 @@ add_points:
   description: Add points to a player's current round score
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
@@ -271,12 +244,8 @@ remove_points:
   description: Remove points from a player's current round score
   target:
     entity:
-      domain:
-        - sensor
-        - binary_sensor
-        - switch
-        - button
-        - text
+      integration: raven_house_tools
+      domain: sensor
   fields:
     entity_id:
       description: Any player entity ID
