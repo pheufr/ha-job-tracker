@@ -45,7 +45,7 @@ class QuizOptionsFlowMixin:
                 store = self.hass.helpers.storage.Store(
                     self.hass,
                     STORAGE_VERSION,
-                    f"{DOMAIN}.quiz_{self.config_entry.entry_id}",
+                    f"{DOMAIN}.quiz_{self._config_entry.entry_id}",
                 )
                 players_data = await store.async_load() or {"players": []}
                 players = players_data.get("players", [])
@@ -86,7 +86,7 @@ class QuizOptionsFlowMixin:
         store = self.hass.helpers.storage.Store(
             self.hass,
             STORAGE_VERSION,
-            f"{DOMAIN}.quiz_{self.config_entry.entry_id}",
+            f"{DOMAIN}.quiz_{self._config_entry.entry_id}",
         )
         players_data = await store.async_load() or {"players": []}
         players = players_data.get("players", [])
@@ -124,7 +124,7 @@ class QuizOptionsFlowMixin:
         store = self.hass.helpers.storage.Store(
             self.hass,
             STORAGE_VERSION,
-            f"{DOMAIN}.quiz_{self.config_entry.entry_id}",
+            f"{DOMAIN}.quiz_{self._config_entry.entry_id}",
         )
         players_data = await store.async_load() or {"players": []}
         players = players_data.get("players", [])

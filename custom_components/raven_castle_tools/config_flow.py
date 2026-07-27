@@ -51,7 +51,7 @@ class RavenCastleToolsOptionsFlow(config_entries.OptionsFlow, QuizOptionsFlowMix
 
     def __init__(self, config_entry) -> None:
         """Initialize options flow state."""
-        self.config_entry = config_entry
+        self._config_entry = config_entry
         self._editing_job_id: str | None = None
 
     async def async_step_init(
@@ -96,7 +96,7 @@ class RavenCastleToolsOptionsFlow(config_entries.OptionsFlow, QuizOptionsFlowMix
                 store = self.hass.helpers.storage.Store(
                     self.hass,
                     STORAGE_VERSION,
-                    f"{DOMAIN}.jobs_{self.config_entry.entry_id}",
+                    f"{DOMAIN}.jobs_{self._config_entry.entry_id}",
                 )
                 jobs_data = await store.async_load() or {"jobs": []}
                 jobs_data["jobs"].append(
@@ -143,7 +143,7 @@ class RavenCastleToolsOptionsFlow(config_entries.OptionsFlow, QuizOptionsFlowMix
         store = self.hass.helpers.storage.Store(
             self.hass,
             STORAGE_VERSION,
-            f"{DOMAIN}.jobs_{self.config_entry.entry_id}",
+            f"{DOMAIN}.jobs_{self._config_entry.entry_id}",
         )
         jobs_data = await store.async_load() or {"jobs": []}
         jobs = jobs_data.get("jobs", [])
@@ -178,7 +178,7 @@ class RavenCastleToolsOptionsFlow(config_entries.OptionsFlow, QuizOptionsFlowMix
         store = self.hass.helpers.storage.Store(
             self.hass,
             STORAGE_VERSION,
-            f"{DOMAIN}.jobs_{self.config_entry.entry_id}",
+            f"{DOMAIN}.jobs_{self._config_entry.entry_id}",
         )
         jobs_data = await store.async_load() or {"jobs": []}
         jobs = jobs_data.get("jobs", [])
