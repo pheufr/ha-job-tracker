@@ -49,10 +49,10 @@ Jobs can also be created via the `raven_house_tools.add_job` service.
 Each job supports:
 
 - `name`
-- `trigger_type`: `schedule` or `frequency`
+- `trigger_type`: `schedule`, `frequency`, or `manual`
 - `cron_expression`
 - `days_interval`
-- `image`
+- `image` (supports media picker/upload in flows and services)
 - `priority`
 
 ### Services
@@ -115,7 +115,7 @@ Each player supports:
 
 - `name`
 - `alias`
-- `photo`
+- `photo` (supports media picker/upload in flows and services)
 - `enabled`
 
 ### Services

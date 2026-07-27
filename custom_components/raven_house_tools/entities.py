@@ -47,6 +47,7 @@ from .const import (
     SERVICE_TRIGGER_JOB,
     STORAGE_VERSION,
     TRIGGER_TYPE_FREQUENCY,
+    TRIGGER_TYPE_MANUAL,
     TRIGGER_TYPE_SCHEDULE,
 )
 from .features import entry_id_supports_jobs
@@ -92,6 +93,9 @@ def _ensure_timezone_aware_iso(value: str) -> str:
 def _compute_next_due(job: dict[str, Any]) -> datetime | None:
     trigger_type = job.get("trigger_type")
 
+    if trigger_type == TRIGGER_TYPE_MANUAL:
+        return None
+
     if trigger_type == TRIGGER_TYPE_SCHEDULE:
         cron_expression = job.get("cron_expression")
         if not cron_expression:
@@ -124,6 +128,8 @@ def _is_due(job: dict[str, Any]) -> bool:
         return True
 
     trigger_type = job.get("trigger_type")
+    if trigger_type == TRIGGER_TYPE_MANUAL:
+        return False
     if trigger_type == TRIGGER_TYPE_SCHEDULE:
         cron_expression = job.get("cron_expression")
         if not cron_expression:
@@ -467,7 +473,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
         {
             vol.Required("name"): cv.string,
             vol.Optional("trigger_type", default=TRIGGER_TYPE_SCHEDULE): vol.In(
-                [TRIGGER_TYPE_SCHEDULE, TRIGGER_TYPE_FREQUENCY]
+                [TRIGGER_TYPE_SCHEDULE, TRIGGER_TYPE_FREQUENCY, TRIGGER_TYPE_MANUAL]
             ),
             vol.Optional("cron_expression"): cv.string,
             vol.Optional("days_interval"): cv.positive_int,
@@ -975,7 +981,7 @@ class JobDaysIntervalNumber(JobEntityBase, NumberEntity):
 class JobTriggerTypeSelect(JobEntityBase, SelectEntity):
     """Select entity for choosing trigger type."""
 
-    _attr_options = [TRIGGER_TYPE_SCHEDULE, TRIGGER_TYPE_FREQUENCY]
+    _attr_options = [TRIGGER_TYPE_SCHEDULE, TRIGGER_TYPE_FREQUENCY, TRIGGER_TYPE_MANUAL]
 
     def __init__(self, hass: HomeAssistant, entry_id: str, job_id: str) -> None:
         super().__init__(hass, entry_id, job_id)

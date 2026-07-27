@@ -48,7 +48,7 @@ add_job:
       description: Job display name
       example: "Kitchen Bins"
     trigger_type:
-      description: Trigger type (schedule or frequency)
+      description: Trigger type (schedule, frequency, or manual)
       example: "schedule"
     cron_expression:
       description: Cron expression for scheduled jobs
@@ -59,6 +59,8 @@ add_job:
     image:
       description: Optional image URL or path
       example: "/local/jobs/bins.png"
+      selector:
+        media: {}
     priority:
       description: Priority value
       example: 0
@@ -75,6 +77,8 @@ add_player:
     photo:
       description: Player photo URL or local path
       example: "/local/players/alice.jpg"
+      selector:
+        media: {}
 
 remove_player:
   description: Remove a player from Raven House Quiz permanently
@@ -144,6 +148,8 @@ update_player_photo:
     photo:
       description: New photo URL or local path
       example: "/local/players/alice.jpg"
+      selector:
+        media: {}
 
 reset_player_score:
   description: Reset one player's scores to zero

@@ -155,7 +155,7 @@
         },
         "trigger_type": {
           "name": "Trigger Type",
-          "description": "schedule or frequency"
+          "description": "schedule, frequency, or manual"
         },
         "cron_expression": {
           "name": "Cron Expression",

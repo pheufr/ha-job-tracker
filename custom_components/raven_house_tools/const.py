@@ -12,6 +12,7 @@ STORAGE_VERSION = 1
 
 TRIGGER_TYPE_SCHEDULE = "schedule"
 TRIGGER_TYPE_FREQUENCY = "frequency"
+TRIGGER_TYPE_MANUAL = "manual"
 
 ATTR_TRIGGER_TYPE = "trigger_type"
 ATTR_CRON_EXPRESSION = "cron_expression"

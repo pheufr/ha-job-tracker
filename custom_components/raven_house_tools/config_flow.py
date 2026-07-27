@@ -11,6 +11,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import selector
 from homeassistant.helpers.storage import Store
 from homeassistant.util.dt import utcnow
 
@@ -21,6 +22,7 @@ from .const import (
     FEATURE_QUIZ,
     STORAGE_VERSION,
     TRIGGER_TYPE_FREQUENCY,
+    TRIGGER_TYPE_MANUAL,
     TRIGGER_TYPE_SCHEDULE,
 )
 from .entities import _jobs_storage_key, async_sync_jobs_from_storage
@@ -144,11 +146,12 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                         {
                             TRIGGER_TYPE_SCHEDULE: "Schedule (Cron)",
                             TRIGGER_TYPE_FREQUENCY: "Frequency (Days)",
+                            TRIGGER_TYPE_MANUAL: "Manual",
                         }
                     ),
                     vol.Optional("cron_expression", default="0 0 * * *"): cv.string,
                     vol.Optional("days_interval", default=7): cv.positive_int,
-                    vol.Optional("image", default=""): cv.string,
+                    vol.Optional("image", default=""): selector.selector({"media": {}}),
                     vol.Optional("priority", default=0): cv.positive_int,
                 }
             ),
@@ -253,6 +256,7 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                         {
                             TRIGGER_TYPE_SCHEDULE: "Schedule (Cron)",
                             TRIGGER_TYPE_FREQUENCY: "Frequency (Days)",
+                            TRIGGER_TYPE_MANUAL: "Manual",
                         }
                     ),
                     vol.Optional(
@@ -262,7 +266,9 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         "days_interval", default=job.get("days_interval", 7)
                     ): cv.positive_int,
-                    vol.Optional("image", default=job.get("image", "")): cv.string,
+                    vol.Optional(
+                        "image", default=job.get("image", "")
+                    ): selector.selector({"media": {}}),
                     vol.Optional("priority", default=job.get("priority", 0)): cv.positive_int,
                     vol.Required("action", default="update"): vol.In(
                         {"update": "Save Changes", "delete": "Delete Job"}
@@ -315,7 +321,7 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                 {
                     vol.Required("name"): cv.string,
                     vol.Required("alias"): cv.string,
-                    vol.Optional("photo", default=""): cv.string,
+                    vol.Optional("photo", default=""): selector.selector({"media": {}}),
                 }
             ),
             errors=errors,
@@ -408,7 +414,9 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                 {
                     vol.Required("name", default=player.get("name", "")): cv.string,
                     vol.Required("alias", default=player.get("alias", "")): cv.string,
-                    vol.Optional("photo", default=player.get("photo", "")): cv.string,
+                    vol.Optional(
+                        "photo", default=player.get("photo", "")
+                    ): selector.selector({"media": {}}),
                     vol.Required("enabled", default=bool(player.get("enabled", False))): bool,
                     vol.Required("action", default="update"): vol.In(
                         {"update": "Save Changes", "delete": "Delete Player"}
