@@ -14,7 +14,7 @@ That integration exposes both feature areas:
 2. Install the repository.
 3. Restart Home Assistant.
 4. Add the `Raven House Tools` integration from Settings -> Devices & Services.
-5. Use the integration's `Configure` action to manage Jobs and Quiz players.
+5. Use the integration's device entities or services to manage Jobs and Quiz players.
 
 ### Manual
 1. Copy `custom_components/raven_house_tools` into your Home Assistant `custom_components` directory.
@@ -30,6 +30,8 @@ Raven House Jobs tracks recurring household jobs as individual devices.
 Each job becomes one device with these entities:
 
 - `binary_sensor.rh_jobs_{job_id}`: primary due / not-due state
+- `switch.rh_jobs_{job_id}_manual_due`: trigger/dismiss state manually
+- `text.rh_jobs_{job_id}_name`: rename the job
 - `sensor.rh_jobs_{job_id}_last_triggered`
 - `sensor.rh_jobs_{job_id}_last_completed`
 - `sensor.rh_jobs_{job_id}_next_due`
@@ -40,9 +42,9 @@ The primary binary sensor also keeps the scheduling metadata and card-friendly a
 
 ### Managing Jobs
 
-Jobs are added and edited from the integration options flow:
+Jobs can be managed from the job device page using control entities.
 
-Settings -> Devices & Services -> Raven House Tools -> Configure
+Jobs can also be created via the `raven_house_tools.add_job` service.
 
 Each job supports:
 
@@ -59,6 +61,9 @@ Service domain: `raven_house_tools`
 
 - `trigger_job`
 - `complete_job`
+- `dismiss_job`
+- `rename_job`
+- `add_job`
 
 Example:
 
@@ -92,14 +97,19 @@ Each player becomes one device with these entities:
 - `sensor.rh_quiz_{player_id}_last_round`
 - `sensor.rh_quiz_{player_id}_alias`
 - `binary_sensor.rh_quiz_{player_id}_enabled`
+- `switch.rh_quiz_{player_id}_enabled`: enable/disable from device view
+- `button.rh_quiz_{player_id}_reset_score`: reset one participant score
+- `text.rh_quiz_{player_id}_name`: rename participant
+- `text.rh_quiz_{player_id}_alias`: update alias
+- `text.rh_quiz_{player_id}_photo`: update image path
 
 The primary total-score entity keeps player metadata in its attributes, including `player_name`, `player_alias`, `player_photo`, `current_round_score`, `last_round_score`, and `enabled`.
 
 ### Managing Players
 
-Players are added and edited from the integration options flow:
+Players can be managed from each participant's device page using control entities.
 
-Settings -> Devices & Services -> Raven House Tools -> Configure
+Players can also be created via the `raven_house_tools.add_player` service.
 
 Each player supports:
 
@@ -116,6 +126,10 @@ Service domain: `raven_house_tools`
 - `remove_player`
 - `enable_player`
 - `disable_player`
+- `rename_player`
+- `update_player_alias`
+- `update_player_photo`
+- `reset_player_score`
 - `add_points`
 - `remove_points`
 - `start_new_round`

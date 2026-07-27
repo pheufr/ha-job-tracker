@@ -6,11 +6,14 @@ from collections.abc import Callable
 from datetime import datetime, timedelta
 import logging
 from typing import Any
+import uuid
 
 import voluptuous as vol
 from croniter import CroniterBadCronError, croniter
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
+from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.text import TextEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
@@ -35,7 +38,10 @@ from .const import (
     DOMAIN,
     JOBS_SIGNAL_UPDATE,
     PREFIX_JOBS,
+    SERVICE_ADD_JOB,
     SERVICE_COMPLETE_JOB,
+    SERVICE_DISMISS_JOB,
+    SERVICE_RENAME_JOB,
     SERVICE_TRIGGER_JOB,
     STORAGE_VERSION,
     TRIGGER_TYPE_FREQUENCY,
@@ -156,6 +162,8 @@ async def _ensure_runtime(hass: HomeAssistant, entry_id: str) -> dict[str, Any]:
         }
     data.setdefault("job_binary_entities", {})
     data.setdefault("job_sensor_entities", {})
+    data.setdefault("job_switch_entities", {})
+    data.setdefault("job_text_entities", {})
     return data
 
 
@@ -200,6 +208,44 @@ async def async_setup_sensors(
     if entities:
         async_add_entities(entities)
         _store_job_sensor_entities(data, entities)
+
+
+async def async_setup_switches(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up switches for jobs."""
+    data = await _ensure_runtime(hass, config_entry.entry_id)
+    data["job_switch_add_entities"] = async_add_entities
+
+    entities = [
+        JobDueSwitch(hass, config_entry.entry_id, job_id)
+        for job_id in sorted(data["jobs"])
+    ]
+    if entities:
+        async_add_entities(entities)
+        for entity in entities:
+            data["job_switch_entities"][entity.job_id] = entity
+
+
+async def async_setup_texts(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up text entities for jobs."""
+    data = await _ensure_runtime(hass, config_entry.entry_id)
+    data["job_text_add_entities"] = async_add_entities
+
+    entities = [
+        JobNameText(hass, config_entry.entry_id, job_id)
+        for job_id in sorted(data["jobs"])
+    ]
+    if entities:
+        async_add_entities(entities)
+        for entity in entities:
+            data["job_text_entities"][entity.job_id] = entity
 
 
 def _build_job_sensor_entities(
@@ -268,10 +314,75 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
         await _save_jobs(hass, entry_id)
         async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
 
+    async def _dismiss_job(call: ServiceCall) -> None:
+        result = _find_job_by_target(hass, call.data.get("entity_id"), call.data.get("job_id"))
+        if result is None:
+            return
+        entry_id, _, job = result
+        job["is_due"] = False
+        await _save_jobs(hass, entry_id)
+        async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
+
+    async def _rename_job(call: ServiceCall) -> None:
+        result = _find_job_by_target(hass, call.data.get("entity_id"), call.data.get("job_id"))
+        if result is None:
+            return
+        entry_id, _, job = result
+        name = str(call.data.get("name", "")).strip()
+        if not name:
+            return
+        job["name"] = name
+        await _save_jobs(hass, entry_id)
+        async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
+
+    async def _add_job(call: ServiceCall) -> None:
+        trigger_type = call.data.get("trigger_type", TRIGGER_TYPE_SCHEDULE)
+        name = str(call.data.get("name", "")).strip()
+        if not name:
+            return
+
+        for entry_id in hass.data.get(DOMAIN, {}):
+            data = await _ensure_runtime(hass, entry_id)
+            job_id = str(uuid.uuid4())[:8]
+            data["jobs"][job_id] = _normalize_job(
+                {
+                    "id": job_id,
+                    "name": name,
+                    "trigger_type": trigger_type,
+                    "cron_expression": call.data.get("cron_expression"),
+                    "days_interval": call.data.get("days_interval"),
+                    "image": call.data.get("image", ""),
+                    "priority": int(call.data.get("priority", 0)),
+                    "created": utcnow().isoformat(),
+                }
+            )
+            await _save_jobs(hass, entry_id)
+            await async_sync_jobs_from_storage(hass, entry_id)
+            return
+
     target_schema = vol.Schema(
         {
             vol.Optional("entity_id"): cv.entity_id,
             vol.Optional("job_id"): cv.string,
+        }
+    )
+    add_job_schema = vol.Schema(
+        {
+            vol.Required("name"): cv.string,
+            vol.Optional("trigger_type", default=TRIGGER_TYPE_SCHEDULE): vol.In(
+                [TRIGGER_TYPE_SCHEDULE, TRIGGER_TYPE_FREQUENCY]
+            ),
+            vol.Optional("cron_expression"): cv.string,
+            vol.Optional("days_interval"): cv.positive_int,
+            vol.Optional("image", default=""): cv.string,
+            vol.Optional("priority", default=0): vol.Coerce(int),
+        }
+    )
+    rename_schema = vol.Schema(
+        {
+            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("job_id"): cv.string,
+            vol.Required("name"): cv.string,
         }
     )
 
@@ -280,6 +391,15 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
 
     if not hass.services.has_service(DOMAIN, SERVICE_COMPLETE_JOB):
         hass.services.async_register(DOMAIN, SERVICE_COMPLETE_JOB, _complete_job, schema=target_schema)
+
+    if not hass.services.has_service(DOMAIN, SERVICE_DISMISS_JOB):
+        hass.services.async_register(DOMAIN, SERVICE_DISMISS_JOB, _dismiss_job, schema=target_schema)
+
+    if not hass.services.has_service(DOMAIN, SERVICE_RENAME_JOB):
+        hass.services.async_register(DOMAIN, SERVICE_RENAME_JOB, _rename_job, schema=rename_schema)
+
+    if not hass.services.has_service(DOMAIN, SERVICE_ADD_JOB):
+        hass.services.async_register(DOMAIN, SERVICE_ADD_JOB, _add_job, schema=add_job_schema)
 
 
 async def async_sync_jobs_from_storage(hass: HomeAssistant, entry_id: str) -> None:
@@ -299,6 +419,12 @@ async def async_sync_jobs_from_storage(hass: HomeAssistant, entry_id: str) -> No
             await binary_entity.async_remove()
         for entity in data.get("job_sensor_entities", {}).pop(removed_job_id, []):
             await entity.async_remove()
+        switch_entity = data.get("job_switch_entities", {}).pop(removed_job_id, None)
+        if switch_entity is not None:
+            await switch_entity.async_remove()
+        text_entity = data.get("job_text_entities", {}).pop(removed_job_id, None)
+        if text_entity is not None:
+            await text_entity.async_remove()
 
     for job_id in existing_ids & new_ids:
         data["jobs"][job_id].update(new_jobs[job_id])
@@ -324,6 +450,20 @@ async def async_sync_jobs_from_storage(hass: HomeAssistant, entry_id: str) -> No
             sensor_entities.extend(_build_job_sensor_entities(hass, entry_id, job_id))
         sensor_add(sensor_entities)
         _store_job_sensor_entities(data, sensor_entities)
+
+    switch_add = data.get("job_switch_add_entities")
+    if switch_add and added_job_ids:
+        switch_entities = [JobDueSwitch(hass, entry_id, job_id) for job_id in added_job_ids]
+        switch_add(switch_entities)
+        for entity in switch_entities:
+            data["job_switch_entities"][entity.job_id] = entity
+
+    text_add = data.get("job_text_add_entities")
+    if text_add and added_job_ids:
+        text_entities = [JobNameText(hass, entry_id, job_id) for job_id in added_job_ids]
+        text_add(text_entities)
+        for entity in text_entities:
+            data["job_text_entities"][entity.job_id] = entity
 
 
 class JobEntityBase:
@@ -501,3 +641,79 @@ class JobNumericSensor(JobEntityBase, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {ATTR_JOB_ID: self.job_id, ATTR_ENTITY_ROLE: self._field_name}
+
+
+class JobDueSwitch(JobEntityBase, SwitchEntity):
+    """Switch to manually trigger or dismiss a job due state."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, job_id: str) -> None:
+        super().__init__(hass, entry_id, job_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{job_id}_manual_due"
+        self.entity_id = f"switch.{PREFIX_JOBS}_{job_id}_manual_due"
+        self._attr_name = "Manual Due"
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    @property
+    def available(self) -> bool:
+        return self._job is not None
+
+    @property
+    def is_on(self) -> bool:
+        job = self._job or {}
+        return bool(job.get("is_due", False))
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        del kwargs
+        job = self._job
+        if not job:
+            return
+        job["is_due"] = True
+        job["last_triggered"] = utcnow().isoformat()
+        await _save_jobs(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}")
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        del kwargs
+        job = self._job
+        if not job:
+            return
+        job["is_due"] = False
+        await _save_jobs(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}")
+
+
+class JobNameText(JobEntityBase, TextEntity):
+    """Text entity to rename a job from the device page."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, job_id: str) -> None:
+        super().__init__(hass, entry_id, job_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{job_id}_name"
+        self.entity_id = f"text.{PREFIX_JOBS}_{job_id}_name"
+        self._attr_name = "Name"
+        self._attr_native_min = 1
+        self._attr_native_max = 120
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    @property
+    def available(self) -> bool:
+        return self._job is not None
+
+    @property
+    def native_value(self) -> str:
+        job = self._job or {}
+        return job.get("name", "")
+
+    async def async_set_value(self, value: str) -> None:
+        name = value.strip()
+        if not name:
+            return
+        job = self._job
+        if not job:
+            return
+        job["name"] = name
+        await _save_jobs(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}")

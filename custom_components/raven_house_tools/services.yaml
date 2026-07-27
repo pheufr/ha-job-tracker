@@ -18,6 +18,51 @@ complete_job:
       description: Job ID as an alternative to entity_id
       example: "trashday"
 
+dismiss_job:
+  description: Dismiss a Raven House Job without marking it completed
+  fields:
+    entity_id:
+      description: The primary job binary sensor entity ID to dismiss
+      example: "binary_sensor.rh_jobs_trash_day"
+    job_id:
+      description: Job ID as an alternative to entity_id
+      example: "trashday"
+
+rename_job:
+  description: Rename a Raven House Job
+  fields:
+    entity_id:
+      description: The primary job binary sensor entity ID
+      example: "binary_sensor.rh_jobs_trash_day"
+    job_id:
+      description: Job ID as an alternative to entity_id
+      example: "trashday"
+    name:
+      description: New display name for the job
+      example: "Kitchen Bins"
+
+add_job:
+  description: Add a Raven House Job
+  fields:
+    name:
+      description: Job display name
+      example: "Kitchen Bins"
+    trigger_type:
+      description: Trigger type (schedule or frequency)
+      example: "schedule"
+    cron_expression:
+      description: Cron expression for scheduled jobs
+      example: "0 0 * * *"
+    days_interval:
+      description: Interval in days for frequency jobs
+      example: 7
+    image:
+      description: Optional image URL or path
+      example: "/local/jobs/bins.png"
+    priority:
+      description: Priority value
+      example: 0
+
 add_player:
   description: Add a player to Raven House Quiz
   fields:
@@ -53,6 +98,55 @@ enable_player:
 
 disable_player:
   description: Disable a player for the current quiz
+  fields:
+    entity_id:
+      description: Any player entity ID
+      example: "sensor.rh_quiz_player1"
+    player_id:
+      description: Player ID as an alternative to entity_id
+      example: "player1"
+
+rename_player:
+  description: Rename a quiz player
+  fields:
+    entity_id:
+      description: Any player entity ID
+      example: "sensor.rh_quiz_player1"
+    player_id:
+      description: Player ID as an alternative to entity_id
+      example: "player1"
+    name:
+      description: New player name
+      example: "Alice Smith"
+
+update_player_alias:
+  description: Update a quiz player alias
+  fields:
+    entity_id:
+      description: Any player entity ID
+      example: "sensor.rh_quiz_player1"
+    player_id:
+      description: Player ID as an alternative to entity_id
+      example: "player1"
+    alias:
+      description: New alias
+      example: "Ace"
+
+update_player_photo:
+  description: Update a quiz player image path
+  fields:
+    entity_id:
+      description: Any player entity ID
+      example: "sensor.rh_quiz_player1"
+    player_id:
+      description: Player ID as an alternative to entity_id
+      example: "player1"
+    photo:
+      description: New photo URL or local path
+      example: "/local/players/alice.jpg"
+
+reset_player_score:
+  description: Reset one player's scores to zero
   fields:
     entity_id:
       description: Any player entity ID

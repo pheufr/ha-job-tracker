@@ -9,7 +9,10 @@ import uuid
 
 import voluptuous as vol
 from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.button import ButtonEntity
 from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.text import TextEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
@@ -39,10 +42,14 @@ from .quiz_const import (
     SERVICE_ENABLE_PLAYER,
     SERVICE_REMOVE_PLAYER,
     SERVICE_REMOVE_POINTS,
+    SERVICE_RENAME_PLAYER,
     SERVICE_RESET_QUIZ,
+    SERVICE_RESET_PLAYER_SCORE,
     SERVICE_START_NEW_QUIZ,
     SERVICE_START_NEW_ROUND,
     STORAGE_VERSION,
+    SERVICE_UPDATE_PLAYER_ALIAS,
+    SERVICE_UPDATE_PLAYER_PHOTO,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -86,6 +93,9 @@ async def _ensure_runtime(hass: HomeAssistant, entry_id: str) -> dict[str, Any]:
         data["quiz_players"] = _normalize_players(players_data)
     data.setdefault("quiz_sensor_entities", {})
     data.setdefault("quiz_binary_entities", {})
+    data.setdefault("quiz_switch_entities", {})
+    data.setdefault("quiz_text_entities", {})
+    data.setdefault("quiz_button_entities", {})
     return data
 
 
@@ -131,6 +141,61 @@ async def async_setup_binary_sensors(
             data["quiz_binary_entities"][entity.player_id] = entity
 
 
+async def async_setup_switches(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up player switches."""
+    data = await _ensure_runtime(hass, config_entry.entry_id)
+    data["quiz_switch_add_entities"] = async_add_entities
+
+    entities = [
+        QuizPlayerEnabledSwitch(hass, config_entry.entry_id, player_id)
+        for player_id in sorted(data["quiz_players"])
+    ]
+    if entities:
+        async_add_entities(entities)
+        for entity in entities:
+            data["quiz_switch_entities"][entity.player_id] = entity
+
+
+async def async_setup_texts(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up player text controls."""
+    data = await _ensure_runtime(hass, config_entry.entry_id)
+    data["quiz_text_add_entities"] = async_add_entities
+
+    entities: list[TextEntity] = []
+    for player_id in sorted(data["quiz_players"]):
+        entities.extend(_build_player_text_entities(hass, config_entry.entry_id, player_id))
+    if entities:
+        async_add_entities(entities)
+        _store_text_entities(data, entities)
+
+
+async def async_setup_buttons(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up player button controls."""
+    data = await _ensure_runtime(hass, config_entry.entry_id)
+    data["quiz_button_add_entities"] = async_add_entities
+
+    entities = [
+        QuizPlayerResetScoreButton(hass, config_entry.entry_id, player_id)
+        for player_id in sorted(data["quiz_players"])
+    ]
+    if entities:
+        async_add_entities(entities)
+        for entity in entities:
+            data["quiz_button_entities"][entity.player_id] = entity
+
+
 def _build_player_sensor_entities(
     hass: HomeAssistant,
     entry_id: str,
@@ -146,6 +211,24 @@ def _build_player_sensor_entities(
 
 def _store_sensor_entities(data: dict[str, Any], entities: list[SensorEntity]) -> None:
     by_player = data.setdefault("quiz_sensor_entities", {})
+    for entity in entities:
+        by_player.setdefault(entity.player_id, []).append(entity)
+
+
+def _build_player_text_entities(
+    hass: HomeAssistant,
+    entry_id: str,
+    player_id: str,
+) -> list[TextEntity]:
+    return [
+        QuizPlayerNameText(hass, entry_id, player_id),
+        QuizPlayerAliasText(hass, entry_id, player_id),
+        QuizPlayerPhotoText(hass, entry_id, player_id),
+    ]
+
+
+def _store_text_entities(data: dict[str, Any], entities: list[TextEntity]) -> None:
+    by_player = data.setdefault("quiz_text_entities", {})
     for entity in entities:
         by_player.setdefault(entity.player_id, []).append(entity)
 
@@ -222,6 +305,24 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
                 binary_add([binary_entity])
                 data["quiz_binary_entities"][player["id"]] = binary_entity
 
+            switch_add = data.get("quiz_switch_add_entities")
+            if switch_add:
+                switch_entity = QuizPlayerEnabledSwitch(hass, entry_id, player["id"])
+                switch_add([switch_entity])
+                data["quiz_switch_entities"][player["id"]] = switch_entity
+
+            text_add = data.get("quiz_text_add_entities")
+            if text_add:
+                text_entities = _build_player_text_entities(hass, entry_id, player["id"])
+                text_add(text_entities)
+                _store_text_entities(data, text_entities)
+
+            button_add = data.get("quiz_button_add_entities")
+            if button_add:
+                button_entity = QuizPlayerResetScoreButton(hass, entry_id, player["id"])
+                button_add([button_entity])
+                data["quiz_button_entities"][player["id"]] = button_entity
+
             await _broadcast(entry_id, player["id"])
             return
 
@@ -238,6 +339,14 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
         binary_entity = data.get("quiz_binary_entities", {}).pop(player_id, None)
         if binary_entity is not None:
             await binary_entity.async_remove()
+        switch_entity = data.get("quiz_switch_entities", {}).pop(player_id, None)
+        if switch_entity is not None:
+            await switch_entity.async_remove()
+        for entity in data.get("quiz_text_entities", {}).pop(player_id, []):
+            await entity.async_remove()
+        button_entity = data.get("quiz_button_entities", {}).pop(player_id, None)
+        if button_entity is not None:
+            await button_entity.async_remove()
 
         await _save_players(hass, entry_id)
 
@@ -255,6 +364,50 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
 
     async def _disable_player(call: ServiceCall) -> None:
         await _set_enabled(call, False)
+
+    async def _rename_player(call: ServiceCall) -> None:
+        result = _find_player_by_target(hass, call.data.get("entity_id"), call.data.get("player_id"))
+        if result is None:
+            return
+        entry_id, _, player = result
+        name = str(call.data.get("name", "")).strip()
+        if not name:
+            return
+        player["name"] = name
+        await _save_players(hass, entry_id)
+        await _broadcast(entry_id, player["id"])
+
+    async def _update_alias(call: ServiceCall) -> None:
+        result = _find_player_by_target(hass, call.data.get("entity_id"), call.data.get("player_id"))
+        if result is None:
+            return
+        entry_id, _, player = result
+        alias = str(call.data.get("alias", "")).strip()
+        if not alias:
+            return
+        player["alias"] = alias
+        await _save_players(hass, entry_id)
+        await _broadcast(entry_id, player["id"])
+
+    async def _update_photo(call: ServiceCall) -> None:
+        result = _find_player_by_target(hass, call.data.get("entity_id"), call.data.get("player_id"))
+        if result is None:
+            return
+        entry_id, _, player = result
+        player["photo"] = str(call.data.get("photo", "")).strip()
+        await _save_players(hass, entry_id)
+        await _broadcast(entry_id, player["id"])
+
+    async def _reset_player_score(call: ServiceCall) -> None:
+        result = _find_player_by_target(hass, call.data.get("entity_id"), call.data.get("player_id"))
+        if result is None:
+            return
+        entry_id, _, player = result
+        player[ATTR_TOTAL_SCORE] = 0
+        player[ATTR_ROUND_SCORE] = 0
+        player[ATTR_LAST_ROUND_SCORE] = 0
+        await _save_players(hass, entry_id)
+        await _broadcast(entry_id, player["id"])
 
     async def _change_points(call: ServiceCall, multiplier: int) -> None:
         result = _find_player_by_target(hass, call.data.get("entity_id"), call.data.get("player_id"))
@@ -322,6 +475,27 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
             vol.Required("points"): vol.Coerce(int),
         }
     )
+    rename_schema = vol.Schema(
+        {
+            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("player_id"): cv.string,
+            vol.Required("name"): cv.string,
+        }
+    )
+    alias_schema = vol.Schema(
+        {
+            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("player_id"): cv.string,
+            vol.Required("alias"): cv.string,
+        }
+    )
+    photo_schema = vol.Schema(
+        {
+            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("player_id"): cv.string,
+            vol.Required("photo"): cv.string,
+        }
+    )
 
     if not hass.services.has_service(DOMAIN, SERVICE_ADD_PLAYER):
         hass.services.async_register(
@@ -353,6 +527,38 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
             DOMAIN,
             SERVICE_DISABLE_PLAYER,
             _disable_player,
+            schema=target_schema,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_RENAME_PLAYER):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_RENAME_PLAYER,
+            _rename_player,
+            schema=rename_schema,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_UPDATE_PLAYER_ALIAS):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_UPDATE_PLAYER_ALIAS,
+            _update_alias,
+            schema=alias_schema,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_UPDATE_PLAYER_PHOTO):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_UPDATE_PLAYER_PHOTO,
+            _update_photo,
+            schema=photo_schema,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_RESET_PLAYER_SCORE):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_RESET_PLAYER_SCORE,
+            _reset_player_score,
             schema=target_schema,
         )
 
@@ -397,6 +603,14 @@ async def async_sync_players_from_storage(hass: HomeAssistant, entry_id: str) ->
         binary_entity = data.get("quiz_binary_entities", {}).pop(removed_player_id, None)
         if binary_entity is not None:
             await binary_entity.async_remove()
+        switch_entity = data.get("quiz_switch_entities", {}).pop(removed_player_id, None)
+        if switch_entity is not None:
+            await switch_entity.async_remove()
+        for entity in data.get("quiz_text_entities", {}).pop(removed_player_id, []):
+            await entity.async_remove()
+        button_entity = data.get("quiz_button_entities", {}).pop(removed_player_id, None)
+        if button_entity is not None:
+            await button_entity.async_remove()
 
     for player_id in existing_ids & new_ids:
         data["quiz_players"][player_id].update(new_players[player_id])
@@ -422,6 +636,34 @@ async def async_sync_players_from_storage(hass: HomeAssistant, entry_id: str) ->
         binary_add(binary_entities)
         for entity in binary_entities:
             data["quiz_binary_entities"][entity.player_id] = entity
+
+    switch_add = data.get("quiz_switch_add_entities")
+    if switch_add and added_player_ids:
+        switch_entities = [
+            QuizPlayerEnabledSwitch(hass, entry_id, player_id)
+            for player_id in added_player_ids
+        ]
+        switch_add(switch_entities)
+        for entity in switch_entities:
+            data["quiz_switch_entities"][entity.player_id] = entity
+
+    text_add = data.get("quiz_text_add_entities")
+    if text_add and added_player_ids:
+        text_entities: list[TextEntity] = []
+        for player_id in added_player_ids:
+            text_entities.extend(_build_player_text_entities(hass, entry_id, player_id))
+        text_add(text_entities)
+        _store_text_entities(data, text_entities)
+
+    button_add = data.get("quiz_button_add_entities")
+    if button_add and added_player_ids:
+        button_entities = [
+            QuizPlayerResetScoreButton(hass, entry_id, player_id)
+            for player_id in added_player_ids
+        ]
+        button_add(button_entities)
+        for entity in button_entities:
+            data["quiz_button_entities"][entity.player_id] = entity
 
 
 class QuizEntityBase:
@@ -609,3 +851,172 @@ class QuizAliasSensor(QuizSensorBase):
         attrs = self._common_attributes()
         attrs[ATTR_PLAYER_METRIC] = "alias"
         return attrs
+
+
+class QuizPlayerEnabledSwitch(QuizEntityBase, SwitchEntity):
+    """Switch to enable or disable a participant."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, player_id: str) -> None:
+        super().__init__(hass, entry_id, player_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{player_id}_enabled_switch"
+        self.entity_id = f"switch.{PREFIX_QUIZ}_{player_id}_enabled"
+        self._attr_name = "Enabled"
+
+    @property
+    def available(self) -> bool:
+        return self._player is not None
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    @property
+    def is_on(self) -> bool:
+        player = self._player or {}
+        return bool(player.get("enabled", False))
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        del kwargs
+        player = self._player
+        if not player:
+            return
+        player["enabled"] = True
+        await _save_players(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{QUIZ_SIGNAL_UPDATE}_{self.entry_id}_{self.player_id}")
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        del kwargs
+        player = self._player
+        if not player:
+            return
+        player["enabled"] = False
+        await _save_players(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{QUIZ_SIGNAL_UPDATE}_{self.entry_id}_{self.player_id}")
+
+
+class QuizPlayerNameText(QuizEntityBase, TextEntity):
+    """Text entity for participant display name."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, player_id: str) -> None:
+        super().__init__(hass, entry_id, player_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{player_id}_name"
+        self.entity_id = f"text.{PREFIX_QUIZ}_{player_id}_name"
+        self._attr_name = "Name"
+        self._attr_native_min = 1
+        self._attr_native_max = 120
+
+    @property
+    def available(self) -> bool:
+        return self._player is not None
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    @property
+    def native_value(self) -> str:
+        player = self._player or {}
+        return player.get("name", "")
+
+    async def async_set_value(self, value: str) -> None:
+        name = value.strip()
+        if not name:
+            return
+        player = self._player
+        if not player:
+            return
+        player["name"] = name
+        await _save_players(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{QUIZ_SIGNAL_UPDATE}_{self.entry_id}_{self.player_id}")
+
+
+class QuizPlayerAliasText(QuizEntityBase, TextEntity):
+    """Text entity for participant alias."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, player_id: str) -> None:
+        super().__init__(hass, entry_id, player_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{player_id}_alias_text"
+        self.entity_id = f"text.{PREFIX_QUIZ}_{player_id}_alias"
+        self._attr_name = "Alias"
+        self._attr_native_min = 1
+        self._attr_native_max = 120
+
+    @property
+    def available(self) -> bool:
+        return self._player is not None
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    @property
+    def native_value(self) -> str:
+        player = self._player or {}
+        return player.get("alias", "")
+
+    async def async_set_value(self, value: str) -> None:
+        alias = value.strip()
+        if not alias:
+            return
+        player = self._player
+        if not player:
+            return
+        player["alias"] = alias
+        await _save_players(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{QUIZ_SIGNAL_UPDATE}_{self.entry_id}_{self.player_id}")
+
+
+class QuizPlayerPhotoText(QuizEntityBase, TextEntity):
+    """Text entity for participant image path."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, player_id: str) -> None:
+        super().__init__(hass, entry_id, player_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{player_id}_photo"
+        self.entity_id = f"text.{PREFIX_QUIZ}_{player_id}_photo"
+        self._attr_name = "Photo"
+        self._attr_native_min = 0
+        self._attr_native_max = 512
+
+    @property
+    def available(self) -> bool:
+        return self._player is not None
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    @property
+    def native_value(self) -> str:
+        player = self._player or {}
+        return player.get("photo", "")
+
+    async def async_set_value(self, value: str) -> None:
+        player = self._player
+        if not player:
+            return
+        player["photo"] = value.strip()
+        await _save_players(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{QUIZ_SIGNAL_UPDATE}_{self.entry_id}_{self.player_id}")
+
+
+class QuizPlayerResetScoreButton(QuizEntityBase, ButtonEntity):
+    """Button to reset one participant's scores."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, player_id: str) -> None:
+        super().__init__(hass, entry_id, player_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{player_id}_reset_score"
+        self.entity_id = f"button.{PREFIX_QUIZ}_{player_id}_reset_score"
+        self._attr_name = "Reset Score"
+
+    @property
+    def available(self) -> bool:
+        return self._player is not None
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    async def async_press(self) -> None:
+        player = self._player
+        if not player:
+            return
+        player[ATTR_TOTAL_SCORE] = 0
+        player[ATTR_ROUND_SCORE] = 0
+        player[ATTR_LAST_ROUND_SCORE] = 0
+        await _save_players(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{QUIZ_SIGNAL_UPDATE}_{self.entry_id}_{self.player_id}")

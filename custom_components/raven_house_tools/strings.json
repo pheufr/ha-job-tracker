@@ -124,6 +124,68 @@
         }
       }
     },
+    "dismiss_job": {
+      "name": "Dismiss Job",
+      "description": "Dismiss a Raven House Job without completing it",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The primary job binary sensor entity ID"
+        },
+        "job_id": {
+          "name": "Job ID",
+          "description": "Job ID as an alternative to entity_id"
+        }
+      }
+    },
+    "rename_job": {
+      "name": "Rename Job",
+      "description": "Rename a Raven House Job",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The primary job binary sensor entity ID"
+        },
+        "job_id": {
+          "name": "Job ID",
+          "description": "Job ID as an alternative to entity_id"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New job name"
+        }
+      }
+    },
+    "add_job": {
+      "name": "Add Job",
+      "description": "Add a Raven House Job",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Job display name"
+        },
+        "trigger_type": {
+          "name": "Trigger Type",
+          "description": "schedule or frequency"
+        },
+        "cron_expression": {
+          "name": "Cron Expression",
+          "description": "Cron expression for schedule jobs"
+        },
+        "days_interval": {
+          "name": "Days Interval",
+          "description": "Days interval for frequency jobs"
+        },
+        "image": {
+          "name": "Image",
+          "description": "Image URL or local path"
+        },
+        "priority": {
+          "name": "Priority",
+          "description": "Priority value"
+        }
+      }
+    },
     "add_player": {
       "name": "Add Player",
       "description": "Add a player to Raven House Quiz",
@@ -173,6 +235,74 @@
     "disable_player": {
       "name": "Disable Player",
       "description": "Disable a player for the current quiz",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        }
+      }
+    },
+    "rename_player": {
+      "name": "Rename Player",
+      "description": "Rename a player",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        },
+        "name": {
+          "name": "Name",
+          "description": "New player name"
+        }
+      }
+    },
+    "update_player_alias": {
+      "name": "Update Player Alias",
+      "description": "Update a player alias",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        },
+        "alias": {
+          "name": "Alias",
+          "description": "New alias"
+        }
+      }
+    },
+    "update_player_photo": {
+      "name": "Update Player Photo",
+      "description": "Update a player photo",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        },
+        "photo": {
+          "name": "Photo",
+          "description": "New photo URL or local path"
+        }
+      }
+    },
+    "reset_player_score": {
+      "name": "Reset Player Score",
+      "description": "Reset a player's score values to zero",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
