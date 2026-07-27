@@ -1,4 +1,4 @@
-"""Config flow for Raven Castle Jobs."""
+﻿"""Config flow for Raven House Tools."""
 
 from __future__ import annotations
 
@@ -19,8 +19,8 @@ from .entities import _jobs_storage_key, async_sync_jobs_from_storage
 from .quiz_entities import _quiz_storage_key, async_sync_players_from_storage
 
 
-class RavenCastleJobsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Raven Castle Tools."""
+class RavenHouseJobsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Raven House Tools."""
 
     VERSION = 1
 
@@ -32,17 +32,17 @@ class RavenCastleJobsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
 
-        return self.async_create_entry(title="Raven Castle Tools", data={})
+        return self.async_create_entry(title="Raven House Tools", data={})
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
-        return RavenCastleJobsOptionsFlow(config_entry)
+        return RavenHouseJobsOptionsFlow(config_entry)
 
 
-class RavenCastleJobsOptionsFlow(config_entries.OptionsFlow):
-    """Handle options for Raven Castle Tools."""
+class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
+    """Handle options for Raven House Tools."""
 
     def __init__(self, config_entry) -> None:
         self._config_entry = config_entry

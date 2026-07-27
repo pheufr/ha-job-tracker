@@ -1,4 +1,4 @@
-class RcQuizLeaderboardCard extends HTMLElement {
+﻿class RHQuizLeaderboardCard extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
   }
@@ -14,7 +14,7 @@ class RcQuizLeaderboardCard extends HTMLElement {
     const players = [];
 
     for (const [entityId, state] of Object.entries(this._hass.states)) {
-      if (!entityId.startsWith("sensor.rc_quiz_")) {
+      if (!entityId.startsWith("sensor.rh_quiz_")) {
         continue;
       }
 
@@ -44,9 +44,9 @@ class RcQuizLeaderboardCard extends HTMLElement {
   }
 
   _medal(rank) {
-    if (rank === 0) return "🥇";
-    if (rank === 1) return "🥈";
-    if (rank === 2) return "🥉";
+    if (rank === 0) return "1st";
+    if (rank === 1) return "2nd";
+    if (rank === 2) return "3rd";
     return `#${rank + 1}`;
   }
 
@@ -78,7 +78,7 @@ class RcQuizLeaderboardCard extends HTMLElement {
       .join("");
 
     this.innerHTML = `
-      <ha-card header="RC Quiz Leaderboard">
+      <ha-card header="RH Quiz Leaderboard">
         <div style="padding:0 16px 12px;">
           ${rows || '<div style="padding:12px 0;opacity:0.7;">No players to display</div>'}
         </div>
@@ -91,11 +91,11 @@ class RcQuizLeaderboardCard extends HTMLElement {
   }
 }
 
-customElements.define("rc-quiz-leaderboard-card", RcQuizLeaderboardCard);
+customElements.define("rh-quiz-leaderboard-card", RHQuizLeaderboardCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "rc-quiz-leaderboard-card",
-  name: "RC Quiz Leaderboard Card",
-  description: "Shows Raven Castle Quiz leaderboard sorted by score",
+  type: "rh-quiz-leaderboard-card",
+  name: "RH Quiz Leaderboard Card",
+  description: "Shows Raven House Quiz leaderboard sorted by score",
 });

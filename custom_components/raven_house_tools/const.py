@@ -1,8 +1,8 @@
-"""Constants for Raven Castle Tools jobs support."""
+﻿"""Constants for Raven House Tools jobs support."""
 
-DOMAIN = "raven_castle_tools"
+DOMAIN = "raven_house_tools"
 
-PREFIX_JOBS = "rc_jobs"
+PREFIX_JOBS = "rh_jobs"
 STORAGE_VERSION = 1
 
 TRIGGER_TYPE_SCHEDULE = "schedule"

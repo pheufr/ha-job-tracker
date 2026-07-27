@@ -1,16 +1,16 @@
-{
+﻿{
   "manifest_version": 2,
-  "domain": "raven_castle_tools",
-  "name": "Raven Castle Tools",
+  "domain": "raven_house_tools",
+  "name": "Raven House Tools",
   "codeowners": ["@pheufr"],
   "config_flow": true,
   "single_config_entry": true,
-  "documentation": "https://github.com/pheufr/ha-raven-castle-tools",
+  "documentation": "https://github.com/pheufr/ha-raven-house-tools",
   "requirements": [
     "croniter==1.4.1"
   ],
-  "version": "3.0.0",
-  "issue_tracker": "https://github.com/pheufr/ha-raven-castle-tools/issues",
+  "version": "3.0.2",
+  "issue_tracker": "https://github.com/pheufr/ha-raven-house-tools/issues",
   "integration_type": "helper",
   "iot_class": "local_polling",
   "after_dependencies": ["frontend"]

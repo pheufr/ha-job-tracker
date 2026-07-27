@@ -1,4 +1,4 @@
-"""Entity model for Raven Castle Quiz support within Raven Castle Tools."""
+﻿"""Entity model for Raven House Quiz support within Raven House Tools."""
 
 from __future__ import annotations
 
@@ -182,7 +182,7 @@ def _find_player_by_target(
 
 
 async def async_setup_quiz_services(hass: HomeAssistant) -> None:
-    """Register Raven Castle Quiz services."""
+    """Register Raven House Quiz services."""
 
     async def _broadcast(entry_id: str, player_id: str | None = None) -> None:
         if player_id is not None:
@@ -441,9 +441,9 @@ class QuizEntityBase:
         player = self._player or {}
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self.entry_id}_{self.player_id}")},
-            name=player.get("name") or f"RC Quiz {self.player_id}",
-            manufacturer="Raven Castle",
-            model="Raven Castle Quiz Player",
+            name=player.get("name") or f"RH Quiz {self.player_id}",
+            manufacturer="Raven House",
+            model="Raven House Quiz Player",
         )
 
     @property
@@ -526,7 +526,7 @@ class QuizTotalScoreSensor(QuizSensorBase):
     @property
     def name(self) -> str:
         player = self._player or {}
-        return player.get("name") or f"RC Quiz {self.player_id}"
+        return player.get("name") or f"RH Quiz {self.player_id}"
 
     @property
     def native_value(self) -> int | None:

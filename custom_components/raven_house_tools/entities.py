@@ -1,4 +1,4 @@
-"""Entity model for Raven Castle Jobs."""
+﻿"""Entity model for Raven House Jobs."""
 
 from __future__ import annotations
 
@@ -244,7 +244,7 @@ def _job_id_from_entity_id(entity_id: str) -> str | None:
 
 
 async def async_setup_jobs_services(hass: HomeAssistant) -> None:
-    """Register Raven Castle Jobs services."""
+    """Register Raven House Jobs services."""
 
     async def _trigger_job(call: ServiceCall) -> None:
         result = _find_job_by_target(hass, call.data.get("entity_id"), call.data.get("job_id"))
@@ -343,9 +343,9 @@ class JobEntityBase:
         job = self._job or {}
         return DeviceInfo(
             identifiers={(DOMAIN, f"{self.entry_id}_{self.job_id}")},
-            name=job.get("name") or f"RC Job {self.job_id}",
-            manufacturer="Raven Castle",
-            model="Raven Castle Job",
+            name=job.get("name") or f"RH Job {self.job_id}",
+            manufacturer="Raven House",
+            model="Raven House Job",
         )
 
     @property
@@ -382,7 +382,7 @@ class JobDueBinarySensor(JobEntityBase, BinarySensorEntity):
     @property
     def name(self) -> str:
         job = self._job or {}
-        return job.get("name") or f"RC Job {self.job_id}"
+        return job.get("name") or f"RH Job {self.job_id}"
 
     @property
     def is_on(self) -> bool:

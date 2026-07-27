@@ -1,25 +1,25 @@
-trigger_job:
-  description: Trigger a Raven Castle Job immediately
+﻿trigger_job:
+  description: Trigger a Raven House Job immediately
   fields:
     entity_id:
       description: The primary job binary sensor entity ID to trigger
-      example: "binary_sensor.rc_jobs_trash_day"
+      example: "binary_sensor.rh_jobs_trash_day"
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
 
 complete_job:
-  description: Mark a Raven Castle Job as completed
+  description: Mark a Raven House Job as completed
   fields:
     entity_id:
       description: The primary job binary sensor entity ID to complete
-      example: "binary_sensor.rc_jobs_trash_day"
+      example: "binary_sensor.rh_jobs_trash_day"
     job_id:
       description: Job ID as an alternative to entity_id
       example: "trashday"
 
 add_player:
-  description: Add a player to Raven Castle Quiz
+  description: Add a player to Raven House Quiz
   fields:
     name:
       description: Player full name
@@ -32,11 +32,11 @@ add_player:
       example: "/local/players/alice.jpg"
 
 remove_player:
-  description: Remove a player from Raven Castle Quiz permanently
+  description: Remove a player from Raven House Quiz permanently
   fields:
     entity_id:
       description: Any player entity ID
-      example: "sensor.rc_quiz_player1"
+      example: "sensor.rh_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -46,7 +46,7 @@ enable_player:
   fields:
     entity_id:
       description: Any player entity ID
-      example: "sensor.rc_quiz_player1"
+      example: "sensor.rh_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -56,7 +56,7 @@ disable_player:
   fields:
     entity_id:
       description: Any player entity ID
-      example: "sensor.rc_quiz_player1"
+      example: "sensor.rh_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -66,7 +66,7 @@ add_points:
   fields:
     entity_id:
       description: Any player entity ID
-      example: "sensor.rc_quiz_player1"
+      example: "sensor.rh_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
@@ -79,7 +79,7 @@ remove_points:
   fields:
     entity_id:
       description: Any player entity ID
-      example: "sensor.rc_quiz_player1"
+      example: "sensor.rh_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"

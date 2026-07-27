@@ -1,20 +1,20 @@
-{
-  "title": "Raven Castle Tools",
+﻿{
+  "title": "Raven House Tools",
   "config": {
     "abort": {
-      "single_instance_allowed": "Only a single Raven Castle Tools instance is supported."
+      "single_instance_allowed": "Only a single Raven House Tools instance is supported."
     },
     "step": {
       "user": {
-        "title": "Raven Castle Tools",
-        "description": "Configure Raven Castle Tools"
+        "title": "Raven House Tools",
+        "description": "Configure Raven House Tools"
       }
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Raven Castle Tools",
+        "title": "Raven House Tools",
         "menu_options": {
           "create_job": "Add Job",
           "list_jobs": "List Jobs",
@@ -23,7 +23,7 @@
         }
       },
       "create_job": {
-        "title": "Add Raven Castle Job",
+        "title": "Add Raven House Job",
         "data": {
           "name": "Name",
           "trigger_type": "Trigger Type",
@@ -98,7 +98,7 @@
   "services": {
     "trigger_job": {
       "name": "Trigger Job",
-      "description": "Manually trigger a Raven Castle Job to mark it as due",
+      "description": "Manually trigger a Raven House Job to mark it as due",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
@@ -112,7 +112,7 @@
     },
     "complete_job": {
       "name": "Complete Job",
-      "description": "Mark a Raven Castle Job as completed",
+      "description": "Mark a Raven House Job as completed",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
@@ -126,7 +126,7 @@
     },
     "add_player": {
       "name": "Add Player",
-      "description": "Add a player to Raven Castle Quiz",
+      "description": "Add a player to Raven House Quiz",
       "fields": {
         "name": {
           "name": "Name",
@@ -144,7 +144,7 @@
     },
     "remove_player": {
       "name": "Remove Player",
-      "description": "Remove a player from Raven Castle Quiz permanently",
+      "description": "Remove a player from Raven House Quiz permanently",
       "fields": {
         "entity_id": {
           "name": "Entity ID",

@@ -1,8 +1,8 @@
-"""Constants for Raven Castle Tools quiz support."""
+﻿"""Constants for Raven House Tools quiz support."""
 
-DOMAIN = "raven_castle_tools"
+DOMAIN = "raven_house_tools"
 
-PREFIX_QUIZ = "rc_quiz"
+PREFIX_QUIZ = "rh_quiz"
 STORAGE_VERSION = 1
 
 ATTR_PLAYER_NAME = "player_name"

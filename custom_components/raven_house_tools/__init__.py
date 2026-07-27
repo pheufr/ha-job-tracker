@@ -1,4 +1,4 @@
-"""The Raven Castle Jobs integration."""
+﻿"""The Raven House Tools integration."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ PLATFORMS = ["binary_sensor", "sensor"]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up Raven Castle Tools."""
+    """Set up Raven House Tools."""
     hass.data.setdefault(DOMAIN, {})
     hass.data.setdefault(QUIZ_DOMAIN, {})
     await async_setup_frontend(hass)
@@ -23,7 +23,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Raven Castle Tools from a config entry."""
+    """Set up Raven House Tools from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     hass.data.setdefault(QUIZ_DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {}

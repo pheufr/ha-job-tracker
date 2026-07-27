@@ -1,4 +1,4 @@
-class RcQuizMasterCard extends HTMLElement {
+﻿class RHQuizMasterCard extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
     this._pointButtons = Array.isArray(this._config.point_buttons) && this._config.point_buttons.length
@@ -14,7 +14,7 @@ class RcQuizMasterCard extends HTMLElement {
   _players() {
     const players = [];
     for (const [entityId, state] of Object.entries(this._hass.states)) {
-      if (!entityId.startsWith("sensor.rc_quiz_")) {
+      if (!entityId.startsWith("sensor.rh_quiz_")) {
         continue;
       }
 
@@ -39,7 +39,7 @@ class RcQuizMasterCard extends HTMLElement {
   }
 
   _call(service, data = {}) {
-    return this._hass.callService("raven_castle_tools", service, data);
+    return this._hass.callService("raven_house_tools", service, data);
   }
 
   _renderPhoto(photo, name) {
@@ -65,7 +65,7 @@ class RcQuizMasterCard extends HTMLElement {
           ${actionButtons}
           <input type="number" style="width:${compact ? "50px" : "60px"};" data-action="custom-points" data-entity="${player.entityId}" value="0" />
           <button data-action="apply-custom" data-entity="${player.entityId}">Apply</button>
-          <button data-action="toggle" data-entity="${player.entityId}" data-enabled="${player.enabled}">${player.enabled ? "✗" : "✓"}</button>
+          <button data-action="toggle" data-entity="${player.entityId}" data-enabled="${player.enabled}">${player.enabled ? "Disable" : "Enable"}</button>
         </td>
       </tr>
     `;
@@ -77,7 +77,7 @@ class RcQuizMasterCard extends HTMLElement {
     const players = this._players();
 
     this.innerHTML = `
-      <ha-card header="RC Quiz Master Control">
+      <ha-card header="RH Quiz Master Control">
         <div style="padding:12px;">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <button data-action="new-round">Start New Round</button>
@@ -118,7 +118,7 @@ class RcQuizMasterCard extends HTMLElement {
         }
 
         if (action === "new-quiz") {
-          if (confirm("Reset all RC Quiz scores and start a new quiz?")) {
+          if (confirm("Reset all RH Quiz scores and start a new quiz?")) {
             await this._call("start_new_quiz");
           }
           return;
@@ -160,11 +160,11 @@ class RcQuizMasterCard extends HTMLElement {
   }
 }
 
-customElements.define("rc-quiz-master-card", RcQuizMasterCard);
+customElements.define("rh-quiz-master-card", RHQuizMasterCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "rc-quiz-master-card",
-  name: "RC Quiz Master Card",
-  description: "Master control panel for Raven Castle Quiz",
+  type: "rh-quiz-master-card",
+  name: "RH Quiz Master Card",
+  description: "Master control panel for Raven House Quiz",
 });

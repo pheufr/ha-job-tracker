@@ -1,11 +1,11 @@
-# Home Assistant Raven Castle Tools
+﻿# Home Assistant Raven House Tools
 
-This repository ships a single HACS-installed Home Assistant integration, `raven_castle_tools`, which is presented in Home Assistant as `Raven Castle Tools`.
+This repository ships a single HACS-installed Home Assistant integration, `raven_house_tools`, which is presented in Home Assistant as `Raven House Tools`.
 
 That integration exposes both feature areas:
 
-- Raven Castle Jobs
-- Raven Castle Quiz
+- Raven House Jobs
+- Raven House Quiz
 
 ## Installation
 
@@ -13,28 +13,28 @@ That integration exposes both feature areas:
 1. Add this repository as a custom repository in HACS.
 2. Install the repository.
 3. Restart Home Assistant.
-4. Add the `Raven Castle Tools` integration from Settings → Devices & Services.
+4. Add the `Raven House Tools` integration from Settings -> Devices & Services.
 5. Use the integration's `Configure` action to manage Jobs and Quiz players.
 
 ### Manual
-1. Copy `custom_components/raven_castle_tools` into your Home Assistant `custom_components` directory.
+1. Copy `custom_components/raven_house_tools` into your Home Assistant `custom_components` directory.
 2. Restart Home Assistant.
-3. Add the `Raven Castle Tools` integration from Settings → Devices & Services.
+3. Add the `Raven House Tools` integration from Settings -> Devices & Services.
 
-## Raven Castle Jobs
+## Raven House Jobs
 
-Raven Castle Jobs tracks recurring household jobs as individual devices.
+Raven House Jobs tracks recurring household jobs as individual devices.
 
 ### Device Model
 
 Each job becomes one device with these entities:
 
-- `binary_sensor.rc_jobs_{job_id}`: primary due / not-due state
-- `sensor.rc_jobs_{job_id}_last_triggered`
-- `sensor.rc_jobs_{job_id}_last_completed`
-- `sensor.rc_jobs_{job_id}_next_due`
-- `sensor.rc_jobs_{job_id}_created`
-- `sensor.rc_jobs_{job_id}_priority`
+- `binary_sensor.rh_jobs_{job_id}`: primary due / not-due state
+- `sensor.rh_jobs_{job_id}_last_triggered`
+- `sensor.rh_jobs_{job_id}_last_completed`
+- `sensor.rh_jobs_{job_id}_next_due`
+- `sensor.rh_jobs_{job_id}_created`
+- `sensor.rh_jobs_{job_id}_priority`
 
 The primary binary sensor also keeps the scheduling metadata and card-friendly attributes such as `image`, `priority`, `trigger_type`, `cron_expression`, and `days_interval`.
 
@@ -42,7 +42,7 @@ The primary binary sensor also keeps the scheduling metadata and card-friendly a
 
 Jobs are added and edited from the integration options flow:
 
-Settings → Devices & Services → Raven Castle Tools → Configure
+Settings -> Devices & Services -> Raven House Tools -> Configure
 
 Each job supports:
 
@@ -55,7 +55,7 @@ Each job supports:
 
 ### Services
 
-Service domain: `raven_castle_tools`
+Service domain: `raven_house_tools`
 
 - `trigger_job`
 - `complete_job`
@@ -63,9 +63,9 @@ Service domain: `raven_castle_tools`
 Example:
 
 ```yaml
-service: raven_castle_tools.complete_job
+service: raven_house_tools.complete_job
 data:
-  entity_id: binary_sensor.rc_jobs_trash_day
+  entity_id: binary_sensor.rh_jobs_trash_day
 ```
 
 ### Jobs Card
@@ -73,25 +73,25 @@ data:
 The jobs card is auto-registered by the integration.
 
 ```yaml
-type: custom:rc-jobs-card
+type: custom:rh-jobs-card
 job_entities:
-  - binary_sensor.rc_jobs_trash_day
-  - binary_sensor.rc_jobs_laundry
+  - binary_sensor.rh_jobs_trash_day
+  - binary_sensor.rh_jobs_laundry
 ```
 
-## Raven Castle Quiz
+## Raven House Quiz
 
-Raven Castle Quiz manages quiz participants as individual devices.
+Raven House Quiz manages quiz participants as individual devices.
 
 ### Device Model
 
 Each player becomes one device with these entities:
 
-- `sensor.rc_quiz_{player_id}`: primary total score entity
-- `sensor.rc_quiz_{player_id}_round`
-- `sensor.rc_quiz_{player_id}_last_round`
-- `sensor.rc_quiz_{player_id}_alias`
-- `binary_sensor.rc_quiz_{player_id}_enabled`
+- `sensor.rh_quiz_{player_id}`: primary total score entity
+- `sensor.rh_quiz_{player_id}_round`
+- `sensor.rh_quiz_{player_id}_last_round`
+- `sensor.rh_quiz_{player_id}_alias`
+- `binary_sensor.rh_quiz_{player_id}_enabled`
 
 The primary total-score entity keeps player metadata in its attributes, including `player_name`, `player_alias`, `player_photo`, `current_round_score`, `last_round_score`, and `enabled`.
 
@@ -99,7 +99,7 @@ The primary total-score entity keeps player metadata in its attributes, includin
 
 Players are added and edited from the integration options flow:
 
-Settings → Devices & Services → Raven Castle Tools → Configure
+Settings -> Devices & Services -> Raven House Tools -> Configure
 
 Each player supports:
 
@@ -110,7 +110,7 @@ Each player supports:
 
 ### Services
 
-Service domain: `raven_castle_tools`
+Service domain: `raven_house_tools`
 
 - `add_player`
 - `remove_player`
@@ -125,9 +125,9 @@ Service domain: `raven_castle_tools`
 Example:
 
 ```yaml
-service: raven_castle_tools.add_points
+service: raven_house_tools.add_points
 data:
-  entity_id: sensor.rc_quiz_alice
+  entity_id: sensor.rh_quiz_alice
   points: 5
 ```
 
@@ -138,7 +138,7 @@ The quiz cards are auto-registered by the integration.
 Leaderboard:
 
 ```yaml
-type: custom:rc-quiz-leaderboard-card
+type: custom:rh-quiz-leaderboard-card
 show_disabled: false
 max_players: 10
 ```
@@ -146,7 +146,7 @@ max_players: 10
 Master control:
 
 ```yaml
-type: custom:rc-quiz-master-card
+type: custom:rh-quiz-master-card
 point_buttons: [5, 10]
 compact: false
 show_photos: true
@@ -161,3 +161,4 @@ show_photos: true
 ## License
 
 MIT
+

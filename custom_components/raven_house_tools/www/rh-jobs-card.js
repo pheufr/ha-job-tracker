@@ -1,4 +1,4 @@
-class RCJobsCard extends HTMLElement {
+﻿class RHJobsCard extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     this.updateCard();
@@ -78,7 +78,7 @@ class RCJobsCard extends HTMLElement {
     const entityId = container.getAttribute("data-entity-id");
     if (!entityId) return;
 
-    this._hass.callService("raven_castle_tools", "complete_job", {
+    this._hass.callService("raven_house_tools", "complete_job", {
       entity_id: entityId,
     });
 
@@ -89,11 +89,11 @@ class RCJobsCard extends HTMLElement {
   }
 }
 
-customElements.define("rc-jobs-card", RCJobsCard);
+customElements.define("rh-jobs-card", RHJobsCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "rc-jobs-card",
-  name: "RC Jobs Card",
-  description: "Shows due Raven Castle Jobs with images",
+  type: "rh-jobs-card",
+  name: "RH Jobs Card",
+  description: "Shows due Raven House Jobs with images",
 });

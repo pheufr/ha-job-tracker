@@ -1,4 +1,4 @@
-"""Binary sensor platform for Raven Castle Tools."""
+﻿"""Binary sensor platform for Raven House Tools."""
 
 from .entities import async_setup_binary_sensors as async_setup_job_binary_sensors
 from .quiz_entities import async_setup_binary_sensors as async_setup_quiz_binary_sensors
