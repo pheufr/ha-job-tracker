@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "domain": "raven_castle_jobs",
-  "name": "Raven Castle Tools",
+  "name": "Raven Castle Jobs",
   "codeowners": ["@pheufr"],
   "config_flow": true,
   "single_config_entry": true,
@@ -9,7 +9,7 @@
   "requirements": [
     "croniter==1.4.1"
   ],
-  "version": "1.2.0",
+  "version": "2.0.0",
   "issue_tracker": "https://github.com/pheufr/ha-raven-castle-tools/issues",
   "integration_type": "helper",
   "iot_class": "local_polling",
