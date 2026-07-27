@@ -1,11 +1,11 @@
 # Home Assistant Raven Castle Tools
 
-This repository now ships two supported Home Assistant custom integrations:
+This repository ships a single HACS-installed Home Assistant integration, `raven_castle_jobs`, which is presented in Home Assistant as `Raven Castle Tools`.
 
-- `raven_castle_jobs`
-- `raven_castle_quiz`
+That integration exposes both feature areas:
 
-Each feature area has its own config entry, services, frontend assets, and device model.
+- Raven Castle Jobs
+- Raven Castle Quiz
 
 ## Installation
 
@@ -13,14 +13,13 @@ Each feature area has its own config entry, services, frontend assets, and devic
 1. Add this repository as a custom repository in HACS.
 2. Install the repository.
 3. Restart Home Assistant.
-4. Add one or both integrations from Settings → Devices & Services:
-   - Raven Castle Jobs
-   - Raven Castle Quiz
+4. Add the `Raven Castle Tools` integration from Settings → Devices & Services.
+5. Use the integration's `Configure` action to manage Jobs and Quiz players.
 
 ### Manual
-1. Copy the `custom_components/` folders you want into your Home Assistant `custom_components` directory.
+1. Copy `custom_components/raven_castle_jobs` into your Home Assistant `custom_components` directory.
 2. Restart Home Assistant.
-3. Add the integrations from Settings → Devices & Services.
+3. Add the `Raven Castle Tools` integration from Settings → Devices & Services.
 
 ## Raven Castle Jobs
 
@@ -43,7 +42,7 @@ The primary binary sensor also keeps the scheduling metadata and card-friendly a
 
 Jobs are added and edited from the integration options flow:
 
-Settings → Devices & Services → Raven Castle Jobs → Configure
+Settings → Devices & Services → Raven Castle Tools → Configure
 
 Each job supports:
 
@@ -100,7 +99,7 @@ The primary total-score entity keeps player metadata in its attributes, includin
 
 Players are added and edited from the integration options flow:
 
-Settings → Devices & Services → Raven Castle Quiz → Configure
+Settings → Devices & Services → Raven Castle Tools → Configure
 
 Each player supports:
 
@@ -155,7 +154,8 @@ show_photos: true
 
 ## Notes
 
-- Both integrations use local brand assets, so Home Assistant 2026.3 or newer is recommended.
+- The HACS repository installs a single integration package because HACS only manages one `custom_components/<domain>` directory per integration repository.
+- Both feature areas use local brand assets, so Home Assistant 2026.3 or newer is recommended.
 - If the custom cards or logos do not appear immediately after restart, perform a hard browser refresh.
 
 ## License

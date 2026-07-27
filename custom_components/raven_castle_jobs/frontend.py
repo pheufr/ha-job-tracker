@@ -11,7 +11,11 @@ from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
-_CARD_FILES = ["rc-jobs-card.js"]
+_CARD_FILES = [
+    "rc-jobs-card.js",
+    "rc-quiz-leaderboard-card.js",
+    "rc-quiz-master-card.js",
+]
 
 
 async def async_setup_frontend(hass: HomeAssistant) -> None:
@@ -22,7 +26,7 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     await hass.http.async_register_static_paths(
         [StaticPathConfig(static_url, str(static_path), False)]
     )
-    _LOGGER.debug("Registered Raven Castle Jobs card assets at %s", static_url)
+    _LOGGER.debug("Registered Raven Castle Tools card assets at %s", static_url)
 
     for card_file in _CARD_FILES:
         url = f"{static_url}/{card_file}"

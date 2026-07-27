@@ -1,23 +1,25 @@
 {
-  "title": "Raven Castle Jobs",
+  "title": "Raven Castle Tools",
   "config": {
     "abort": {
-      "single_instance_allowed": "Only a single Raven Castle Jobs instance is supported."
+      "single_instance_allowed": "Only a single Raven Castle Tools instance is supported."
     },
     "step": {
       "user": {
-        "title": "Raven Castle Jobs",
-        "description": "Configure Raven Castle Jobs"
+        "title": "Raven Castle Tools",
+        "description": "Configure Raven Castle Tools"
       }
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Raven Castle Jobs",
+        "title": "Raven Castle Tools",
         "menu_options": {
           "create_job": "Add Job",
-          "list_jobs": "List Jobs"
+          "list_jobs": "List Jobs",
+          "add_player": "Add Player",
+          "list_players": "List Players"
         }
       },
       "create_job": {
@@ -37,6 +39,20 @@
           "job_id": "Job"
         }
       },
+      "add_player": {
+        "title": "Add Quiz Player",
+        "data": {
+          "name": "Name",
+          "alias": "Alias",
+          "photo": "Photo"
+        }
+      },
+      "list_players": {
+        "title": "List Quiz Players",
+        "data": {
+          "player_id": "Player"
+        }
+      },
       "edit_job": {
         "title": "Edit Job",
         "data": {
@@ -48,19 +64,35 @@
           "priority": "Priority",
           "action": "Action"
         }
+      },
+      "edit_player": {
+        "title": "Edit Quiz Player",
+        "data": {
+          "name": "Name",
+          "alias": "Alias",
+          "photo": "Photo",
+          "enabled": "Enabled",
+          "action": "Action"
+        }
       }
     },
     "error": {
       "name_required": "Name is required",
       "cron_required": "Cron expression is required",
-      "days_required": "Days interval must be greater than 0"
+      "days_required": "Days interval must be greater than 0",
+      "alias_required": "Alias is required"
     },
     "abort": {
       "job_created": "Job created",
       "job_updated": "Job updated",
       "job_deleted": "Job deleted",
       "job_not_found": "Job not found",
-      "no_jobs": "No jobs found"
+      "no_jobs": "No jobs found",
+      "player_created": "Player created",
+      "player_updated": "Player updated",
+      "player_deleted": "Player deleted",
+      "player_not_found": "Player not found",
+      "no_players": "No players found"
     }
   },
   "services": {
@@ -91,6 +123,114 @@
           "description": "Job ID as an alternative to entity_id"
         }
       }
+    },
+    "add_player": {
+      "name": "Add Player",
+      "description": "Add a player to Raven Castle Quiz",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Player full name"
+        },
+        "alias": {
+          "name": "Alias",
+          "description": "Player leaderboard alias"
+        },
+        "photo": {
+          "name": "Photo",
+          "description": "Player photo URL or path"
+        }
+      }
+    },
+    "remove_player": {
+      "name": "Remove Player",
+      "description": "Remove a player from Raven Castle Quiz permanently",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        }
+      }
+    },
+    "enable_player": {
+      "name": "Enable Player",
+      "description": "Enable a player for the current quiz",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        }
+      }
+    },
+    "disable_player": {
+      "name": "Disable Player",
+      "description": "Disable a player for the current quiz",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        }
+      }
+    },
+    "add_points": {
+      "name": "Add Points",
+      "description": "Add points to the player's current round score",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points to add"
+        }
+      }
+    },
+    "remove_points": {
+      "name": "Remove Points",
+      "description": "Remove points from the player's current round score",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        },
+        "points": {
+          "name": "Points",
+          "description": "Points to remove"
+        }
+      }
+    },
+    "start_new_round": {
+      "name": "Start New Round",
+      "description": "Move current round scores into totals and reset the current round"
+    },
+    "start_new_quiz": {
+      "name": "Start New Quiz",
+      "description": "Reset all quiz scores to zero"
+    },
+    "reset_quiz": {
+      "name": "Reset Quiz",
+      "description": "Reset all scores and disable all players"
     }
   }
 }
