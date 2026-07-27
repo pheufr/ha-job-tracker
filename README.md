@@ -261,10 +261,16 @@ clips:
   - id: air_horn
     label: Air Horn
     icon: mdi:bullhorn
+    type: sfx
+    fg_color: "#ffffff"
+    bg_color: "#c0392b"
     media: media-source://media_source/local/sfx/air_horn.mp3
   - id: applause
     label: Applause
     icon: mdi:hand-clap
+    type: crowd
+    fg_color: "#1f2a44"
+    bg_color: "#f9d976"
     media: media-source://media_source/local/sfx/applause.mp3
 default_mode: connected
 show_mode_selector: true
@@ -275,7 +281,10 @@ Clip fields:
 - `id`: stable identifier for the button
 - `label`: button text
 - `icon`: Material Design icon
+- `type`: clip category/label shown on the button (for example `sfx`, `crowd`, `voice`)
 - `media`: media-source or URL/path to an audio file
+- `fg_color`: optional per-button foreground/text color
+- `bg_color`: optional per-button background color
 
 Optional card fields:
 

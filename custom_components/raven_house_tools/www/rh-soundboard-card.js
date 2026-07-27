@@ -91,11 +91,18 @@ class RHSoundboardCard extends HTMLElement {
         if (!media) {
           return null;
         }
+        const sourceLabel = media.replace("media-source://", "");
+        const mediaTypeRaw = String(clip.type || clip.media_type || "audio").trim().toLowerCase();
+        const mediaType = mediaTypeRaw || "audio";
         return {
           id: clip.id || `clip_${index}`,
           label: clip.label || clip.name || `Clip ${index + 1}`,
           icon: clip.icon || "mdi:music-note",
           media,
+          mediaType,
+          sourceLabel,
+          fgColor: typeof clip.fg_color === "string" ? clip.fg_color : (typeof clip.text_color === "string" ? clip.text_color : ""),
+          bgColor: typeof clip.bg_color === "string" ? clip.bg_color : (typeof clip.background_color === "string" ? clip.background_color : ""),
         };
       })
       .filter((clip) => clip !== null);
@@ -137,6 +144,21 @@ class RHSoundboardCard extends HTMLElement {
     return this._connected
       ? `Connected to ${this._selectedTarget}`
       : `Ready (${this._playMode}): ${this._selectedTarget}`;
+  }
+
+  _clipStatusText(clip) {
+    if (this._busy) {
+      return "Sending...";
+    }
+    const lastClip = String(this._sessionState?.last_clip || "");
+    if (lastClip && lastClip === clip.media) {
+      return "Last triggered";
+    }
+    return this._connected ? "Live" : "Ready";
+  }
+
+  _optionInputsDisabled() {
+    return this._connected || this._busy;
   }
 
   async _toggleConnection() {
@@ -202,10 +224,12 @@ class RHSoundboardCard extends HTMLElement {
       return "";
     }
 
+    const disabledAttr = this._optionInputsDisabled() ? "disabled" : "";
+
     return `
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <label for="rh-soundboard-mode" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;">Mode</label>
-        <select id="rh-soundboard-mode" style="padding:8px 10px;border-radius:8px;">
+        <select id="rh-soundboard-mode" ${disabledAttr} style="padding:8px 10px;border-radius:8px;min-width:180px;">
           <option value="connected" ${this._playMode === "connected" ? "selected" : ""}>Connected session</option>
           <option value="direct" ${this._playMode === "direct" ? "selected" : ""}>Direct play</option>
         </select>
@@ -219,6 +243,8 @@ class RHSoundboardCard extends HTMLElement {
       return "";
     }
 
+    const disabledAttr = this._optionInputsDisabled() ? "disabled" : "";
+
     const options = players
       .map((player) => {
         const selected = player.entityId === this._selectedTarget ? "selected" : "";
@@ -229,7 +255,7 @@ class RHSoundboardCard extends HTMLElement {
     return `
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
         <label for="rh-soundboard-target" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;">Target</label>
-        <select id="rh-soundboard-target" style="flex:1;min-width:220px;padding:8px 10px;border-radius:8px;">
+        <select id="rh-soundboard-target" ${disabledAttr} style="flex:1;min-width:220px;padding:8px 10px;border-radius:8px;">
           <option value="">Select media player</option>
           ${options}
         </select>
@@ -246,33 +272,61 @@ class RHSoundboardCard extends HTMLElement {
     const clips = this._clips();
     const columns = Math.max(1, this._columns);
     const buttonLabel = this._connected ? "Disconnect" : "Connect";
+    const optionsLocked = this._optionInputsDisabled();
 
     this.innerHTML = `
       <ha-card${this._renderHeader()}>
         <div style="padding:16px;display:grid;gap:14px;">
-          ${this._renderTargetSelector(players)}
-          ${this._renderModeSelector()}
-          <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-            <button id="rh-soundboard-connect" style="padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;">
-              ${buttonLabel}
-            </button>
-            <div style="font-size:12px;opacity:0.75;">${this._statusText()}</div>
+          <div style="display:grid;gap:10px;padding:12px;border-radius:12px;border:1px solid rgba(128,128,128,0.24);background:rgba(128,128,128,0.06);">
+            ${this._renderTargetSelector(players)}
+            ${this._renderModeSelector()}
+            <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+              <button id="rh-soundboard-connect" style="padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;">
+                ${buttonLabel}
+              </button>
+              <div style="font-size:12px;opacity:0.72;">${optionsLocked ? "Options locked while connected" : "Options unlocked"}</div>
+            </div>
+            <div style="font-size:12px;opacity:0.86;line-height:1.3;">Status: ${this._statusText()}</div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(${columns}, minmax(0, 1fr));gap:10px;">
             ${
               clips
-                .map(
-                  (clip) => `
+                .map((clip) => {
+                  const styleParts = [
+                    "min-height:96px",
+                    "padding:10px",
+                    "border:none",
+                    "border-radius:12px",
+                    "cursor:pointer",
+                    "display:flex",
+                    "flex-direction:column",
+                    "align-items:flex-start",
+                    "justify-content:flex-start",
+                    "gap:6px",
+                    "font-weight:600",
+                  ];
+                  if (clip.bgColor) {
+                    styleParts.push(`background:${clip.bgColor}`);
+                  }
+                  if (clip.fgColor) {
+                    styleParts.push(`color:${clip.fgColor}`);
+                  }
+                  const style = styleParts.join(";");
+                  return `
               <button
                 class="rh-soundboard-clip"
                 data-id="${clip.id}"
-                style="min-height:74px;padding:10px;border:none;border-radius:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-weight:600;"
+                style="${style}"
               >
-                <ha-icon icon="${clip.icon}"></ha-icon>
-                <span style="font-size:12px;text-align:center;line-height:1.2;">${clip.label}</span>
+                <div style="display:flex;align-items:center;gap:8px;width:100%;">
+                  <ha-icon icon="${clip.icon}"></ha-icon>
+                  <span style="font-size:13px;line-height:1.2;">${clip.label}</span>
+                </div>
+                <div style="font-size:11px;opacity:0.78;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${clip.sourceLabel} • ${clip.mediaType}</div>
+                <div style="font-size:11px;opacity:0.72;line-height:1.2;">${this._clipStatusText(clip)}</div>
               </button>
-            `
-                )
+            `;
+                })
                 .join("") || '<div style="grid-column:1 / -1;opacity:0.7;">No clips configured</div>'
             }
           </div>
