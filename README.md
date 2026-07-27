@@ -83,7 +83,7 @@ data:
   image: /media/local/jobs/trash.png
 ```
 
-Use the Service UI media picker for `image`.
+Use the Actions/Services UI target picker for the job entity and image picker for `image`.
 
 ### Jobs Card
 
@@ -166,7 +166,7 @@ data:
   photo: /media/local/players/alice.png
 ```
 
-Use the Service UI media picker for `photo`.
+Use the Actions/Services UI target picker for the player entity and image picker for `photo`.
 
 ### Quiz Cards
 

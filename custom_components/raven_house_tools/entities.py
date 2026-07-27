@@ -61,9 +61,10 @@ def _normalize_media_value(value: Any) -> str:
     if isinstance(value, str):
         return value.strip()
     if isinstance(value, dict):
-        media_id = value.get("media_content_id")
-        if isinstance(media_id, str):
-            return media_id.strip()
+        for key in ("media_content_id", "path", "url", "entity_picture"):
+            candidate = value.get(key)
+            if isinstance(candidate, str):
+                return candidate.strip()
     return ""
 
 
@@ -378,16 +379,24 @@ def _store_job_number_entities(data: dict[str, Any], entities: list[NumberEntity
 
 
 def _find_job_by_target(
-    hass: HomeAssistant, entity_id: str | None, job_id: str | None
+    hass: HomeAssistant, entity_id: str | list[str] | None, job_id: str | None
 ) -> tuple[str, dict[str, Any], dict[str, Any]] | None:
+    entity_ids: list[str] = []
+    if isinstance(entity_id, str):
+        entity_ids = [entity_id]
+    elif isinstance(entity_id, list):
+        entity_ids = [item for item in entity_id if isinstance(item, str)]
+
     for entry_id, data in hass.data.get(DOMAIN, {}).items():
         if not entry_id_supports_jobs(hass, entry_id):
             continue
         jobs = data.get("jobs", {})
         if job_id and job_id in jobs:
             return entry_id, data, jobs[job_id]
-        if entity_id:
-            binary_entity = data.get("job_binary_entities", {}).get(_job_id_from_entity_id(entity_id))
+        for item_entity_id in entity_ids:
+            binary_entity = data.get("job_binary_entities", {}).get(
+                _job_id_from_entity_id(item_entity_id)
+            )
             if binary_entity and binary_entity.job_id in jobs:
                 return entry_id, data, jobs[binary_entity.job_id]
     return None
@@ -486,7 +495,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
 
     target_schema = vol.Schema(
         {
-            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("job_id"): cv.string,
         }
     )
@@ -510,14 +519,14 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
     )
     rename_schema = vol.Schema(
         {
-            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("job_id"): cv.string,
             vol.Required("name"): cv.string,
         }
     )
     image_schema = vol.Schema(
         {
-            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("job_id"): cv.string,
             vol.Required("image"): vol.Any(
                 cv.string,

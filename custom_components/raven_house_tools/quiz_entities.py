@@ -61,9 +61,10 @@ def _normalize_media_value(value: Any) -> str:
     if isinstance(value, str):
         return value.strip()
     if isinstance(value, dict):
-        media_id = value.get("media_content_id")
-        if isinstance(media_id, str):
-            return media_id.strip()
+        for key in ("media_content_id", "path", "url", "entity_picture"):
+            candidate = value.get(key)
+            if isinstance(candidate, str):
+                return candidate.strip()
     return ""
 
 
@@ -263,16 +264,22 @@ def _entity_player_id(entity_id: str) -> str | None:
 
 
 def _find_player_by_target(
-    hass: HomeAssistant, entity_id: str | None, player_id: str | None
+    hass: HomeAssistant, entity_id: str | list[str] | None, player_id: str | None
 ) -> tuple[str, dict[str, Any], dict[str, Any]] | None:
+    entity_ids: list[str] = []
+    if isinstance(entity_id, str):
+        entity_ids = [entity_id]
+    elif isinstance(entity_id, list):
+        entity_ids = [item for item in entity_id if isinstance(item, str)]
+
     for entry_id, data in hass.data.get(DOMAIN, {}).items():
         if not entry_id_supports_quiz(hass, entry_id):
             continue
         players = data.get("quiz_players", {})
         if player_id and player_id in players:
             return entry_id, data, players[player_id]
-        if entity_id:
-            parsed_player_id = _entity_player_id(entity_id)
+        for item_entity_id in entity_ids:
+            parsed_player_id = _entity_player_id(item_entity_id)
             if parsed_player_id and parsed_player_id in players:
                 return entry_id, data, players[parsed_player_id]
     return None
@@ -486,34 +493,34 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
 
     target_schema = vol.Schema(
         {
-            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("player_id"): cv.string,
         }
     )
     points_schema = vol.Schema(
         {
-            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("player_id"): cv.string,
             vol.Required("points"): vol.Coerce(int),
         }
     )
     rename_schema = vol.Schema(
         {
-            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("player_id"): cv.string,
             vol.Required("name"): cv.string,
         }
     )
     alias_schema = vol.Schema(
         {
-            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("player_id"): cv.string,
             vol.Required("alias"): cv.string,
         }
     )
     photo_schema = vol.Schema(
         {
-            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("player_id"): cv.string,
             vol.Required("photo"): vol.Any(
                 cv.string,
