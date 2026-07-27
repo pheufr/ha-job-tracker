@@ -48,7 +48,6 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     """Register static paths and Lovelace module URLs for custom cards."""
     static_url = "/raven_house_tools"
     module_base_absolute = "/raven_house_tools"
-    module_base_relative = "./raven_house_tools"
     static_path = Path(__file__).parent / "www"
 
     try:
@@ -65,11 +64,6 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
         versioned_absolute = f"{module_base_absolute}/{card_file}?v={version}"
         add_extra_js_url(hass, versioned_absolute)
         _LOGGER.debug("Registered Lovelace module URL: %s", versioned_absolute)
-
-        # Fallback for dashboard contexts that resolve relative module URLs differently.
-        versioned_relative = f"{module_base_relative}/{card_file}?v={version}"
-        add_extra_js_url(hass, versioned_relative)
-        _LOGGER.debug("Registered Lovelace module URL fallback: %s", versioned_relative)
 
         # Compatibility fallback for frontend builds that do not honor querystring resources.
         plain_absolute = f"{module_base_absolute}/{card_file}"
