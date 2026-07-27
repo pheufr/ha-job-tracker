@@ -16,6 +16,7 @@ _CARD_FILES = [
     "rh-jobs-card.js",
     "rh-quiz-leaderboard-card.js",
     "rh-quiz-master-card.js",
+    "rh-quiz-round-card.js",
 ]
 
 

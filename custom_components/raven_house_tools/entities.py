@@ -73,7 +73,7 @@ def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
         "created": _ensure_timezone_aware_iso(job.get("created") or utcnow().isoformat()),
         "last_completed": job.get("last_completed"),
         "last_triggered": job.get("last_triggered"),
-        "is_due": bool(job.get("is_due", False)),
+        "manual_due": bool(job.get("manual_due", job.get("is_due", False))),
     }
 
 
@@ -119,7 +119,7 @@ def _compute_next_due(job: dict[str, Any]) -> datetime | None:
 
 
 def _is_due(job: dict[str, Any]) -> bool:
-    if job.get("is_due"):
+    if job.get("manual_due"):
         return True
 
     trigger_type = job.get("trigger_type")
@@ -140,11 +140,13 @@ def _is_due(job: dict[str, Any]) -> bool:
         days_interval = job.get("days_interval")
         if not days_interval or days_interval <= 0:
             return False
-        last_completed = job.get("last_completed")
-        if not last_completed:
+        reference_timestamp = job.get("last_completed") or job.get("last_triggered")
+        if not reference_timestamp:
             return True
         try:
-            due_date = _ensure_timezone_aware_datetime(last_completed) + timedelta(days=days_interval)
+            due_date = _ensure_timezone_aware_datetime(reference_timestamp) + timedelta(
+                days=days_interval
+            )
             return utcnow() >= due_date
         except (OverflowError, ValueError, TypeError) as err:
             _LOGGER.error("Error checking frequency for %s: %s", job.get("name"), err)
@@ -370,7 +372,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
         if result is None:
             return
         entry_id, _, job = result
-        job["is_due"] = True
+        job["manual_due"] = True
         job["last_triggered"] = utcnow().isoformat()
         await _save_jobs(hass, entry_id)
         async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
@@ -380,10 +382,10 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
         if result is None:
             return
         entry_id, _, job = result
-        job["is_due"] = False
         now = utcnow().isoformat()
+        job["manual_due"] = False
         job["last_completed"] = now
-        job["last_triggered"] = job.get("last_triggered") or now
+        job["last_triggered"] = now
         await _save_jobs(hass, entry_id)
         async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
 
@@ -392,7 +394,8 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
         if result is None:
             return
         entry_id, _, job = result
-        job["is_due"] = False
+        job["manual_due"] = False
+        job["last_triggered"] = utcnow().isoformat()
         await _save_jobs(hass, entry_id)
         async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
 
@@ -427,6 +430,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
                     "image": call.data.get("image", ""),
                     "priority": int(call.data.get("priority", 0)),
                     "created": utcnow().isoformat(),
+                    "manual_due": False,
                 }
             )
             await _save_jobs(hass, entry_id)
@@ -622,16 +626,7 @@ class JobDueBinarySensor(JobEntityBase, BinarySensorEntity):
         job = self._job
         if not job:
             return False
-        computed_due = _is_due(job)
-        if computed_due and not job.get("is_due"):
-            job["is_due"] = True
-            job["last_triggered"] = job.get("last_triggered") or utcnow().isoformat()
-            self.hass.async_create_task(_save_jobs(self.hass, self.entry_id))
-            async_dispatcher_send(
-                self.hass,
-                f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}",
-            )
-        return bool(job.get("is_due"))
+        return _is_due(job)
 
     @property
     def icon(self) -> str:
@@ -755,14 +750,14 @@ class JobDueSwitch(JobEntityBase, SwitchEntity):
     @property
     def is_on(self) -> bool:
         job = self._job or {}
-        return bool(job.get("is_due", False))
+        return bool(job.get("manual_due", False))
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         del kwargs
         job = self._job
         if not job:
             return
-        job["is_due"] = True
+        job["manual_due"] = True
         job["last_triggered"] = utcnow().isoformat()
         await _save_jobs(self.hass, self.entry_id)
         async_dispatcher_send(self.hass, f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}")
@@ -772,7 +767,8 @@ class JobDueSwitch(JobEntityBase, SwitchEntity):
         job = self._job
         if not job:
             return
-        job["is_due"] = False
+        job["manual_due"] = False
+        job["last_triggered"] = utcnow().isoformat()
         await _save_jobs(self.hass, self.entry_id)
         async_dispatcher_send(self.hass, f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}")
 

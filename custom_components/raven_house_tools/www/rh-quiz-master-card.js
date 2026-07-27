@@ -1,9 +1,19 @@
 ﻿class RHQuizMasterCard extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
-    this._pointButtons = Array.isArray(this._config.point_buttons) && this._config.point_buttons.length
-      ? this._config.point_buttons
-      : [5];
+    this._pointButtons = [5, 1, -1, -5];
+  }
+
+  _title() {
+    if (this._config.title === undefined) {
+      return "RH Quiz Master Control";
+    }
+    return this._config.title;
+  }
+
+  _renderHeader() {
+    const title = this._title();
+    return title === "" ? "" : ` header="${title}"`;
   }
 
   set hass(hass) {
@@ -52,7 +62,11 @@
 
   _row(player, compact) {
     const actionButtons = this._pointButtons
-      .map((points) => `<button data-action="add" data-entity="${player.entityId}" data-points="${points}">+${points}</button><button data-action="remove" data-entity="${player.entityId}" data-points="${points}">-${points}</button>`)
+      .map((points) => {
+        const action = points > 0 ? "add" : "remove";
+        const label = points > 0 ? `+${points}` : `${points}`;
+        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}">${label}</button>`;
+      })
       .join(" ");
 
     return `
@@ -61,12 +75,7 @@
         <td>${player.alias}</td>
         <td>${player.round}</td>
         <td>${player.total}</td>
-        <td>
-          ${actionButtons}
-          <input type="number" style="width:${compact ? "50px" : "60px"};" data-action="custom-points" data-entity="${player.entityId}" value="0" />
-          <button data-action="apply-custom" data-entity="${player.entityId}">Apply</button>
-          <button data-action="toggle" data-entity="${player.entityId}" data-enabled="${player.enabled}">${player.enabled ? "Disable" : "Enable"}</button>
-        </td>
+        <td>${actionButtons}</td>
       </tr>
     `;
   }
@@ -77,7 +86,7 @@
     const players = this._players();
 
     this.innerHTML = `
-      <ha-card header="RH Quiz Master Control">
+      <ha-card${this._renderHeader()}>
         <div style="padding:12px;">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <button data-action="new-round">Start New Round</button>
@@ -133,24 +142,6 @@
           return;
         }
 
-        if (action === "toggle") {
-          const enabled = event.currentTarget.dataset.enabled === "true";
-          await this._call(enabled ? "disable_player" : "enable_player", {
-            entity_id: entityId,
-          });
-          return;
-        }
-
-        if (action === "apply-custom") {
-          const input = this.querySelector(`input[data-action='custom-points'][data-entity='${entityId}']`);
-          const value = Number(input?.value || 0);
-          if (value === 0) return;
-          await this._call(value > 0 ? "add_points" : "remove_points", {
-            entity_id: entityId,
-            points: Math.abs(value),
-          });
-          input.value = "0";
-        }
       };
     });
   }

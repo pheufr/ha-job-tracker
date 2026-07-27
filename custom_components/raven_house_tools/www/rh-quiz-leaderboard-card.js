@@ -3,6 +3,18 @@
     this._config = config || {};
   }
 
+  _title() {
+    if (this._config.title === undefined) {
+      return "RH Quiz Leaderboard";
+    }
+    return this._config.title;
+  }
+
+  _renderHeader() {
+    const title = this._title();
+    return title === "" ? "" : ` header="${title}"`;
+  }
+
   set hass(hass) {
     this._hass = hass;
     this._render();
@@ -50,6 +62,33 @@
     return `#${rank + 1}`;
   }
 
+  _rankLabels(players) {
+    const labels = [];
+    let previousRank = 0;
+
+    players.forEach((player, index) => {
+      if (index === 0) {
+        previousRank = 1;
+        labels.push(this._medal(0));
+        return;
+      }
+
+      const previousPlayer = players[index - 1];
+      const isTied =
+        player.total === previousPlayer.total && player.round === previousPlayer.round;
+
+      if (isTied) {
+        labels.push("");
+        return;
+      }
+
+      previousRank = index + 1;
+      labels.push(this._medal(previousRank - 1));
+    });
+
+    return labels;
+  }
+
   _photo(photo, alias) {
     if (!photo) {
       return `<div style="width:40px;height:40px;border-radius:50%;background:#999;color:white;display:flex;align-items:center;justify-content:center;font-size:14px;">${(alias || "?").slice(0, 1).toUpperCase()}</div>`;
@@ -61,11 +100,12 @@
     if (!this._hass) return;
 
     const players = this._collectPlayers();
+    const rankLabels = this._rankLabels(players);
     const rows = players
       .map(
         (player, index) => `
           <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(128,128,128,0.2);${player.enabled ? "" : "opacity:0.45;"}">
-            <div style="min-width:34px;font-weight:700;">${this._medal(index)}</div>
+            <div style="min-width:34px;font-weight:700;">${rankLabels[index]}</div>
             ${this._photo(player.photo, player.alias)}
             <div style="flex:1;min-width:0;">
               <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.alias}</div>
@@ -78,7 +118,7 @@
       .join("");
 
     this.innerHTML = `
-      <ha-card header="RH Quiz Leaderboard">
+      <ha-card${this._renderHeader()}>
         <div style="padding:0 16px 12px;">
           ${rows || '<div style="padding:12px 0;opacity:0.7;">No players to display</div>'}
         </div>
