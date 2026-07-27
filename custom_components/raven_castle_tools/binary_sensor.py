@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.storage import Store
 from homeassistant.util.dt import utcnow
 
 from .const import (
@@ -47,7 +48,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up job binary sensors from a config entry."""
-    store = hass.helpers.storage.Store(hass, STORAGE_VERSION, _jobs_storage_key(config_entry.entry_id))
+    store = Store(hass, STORAGE_VERSION, _jobs_storage_key(config_entry.entry_id))
     jobs_data = await store.async_load() or {"jobs": []}
 
     entities: list[JobBinarySensor] = []

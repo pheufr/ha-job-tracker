@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.storage import Store
 from homeassistant.util.dt import utcnow
 
 from .const import (
@@ -77,7 +78,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up quiz sensors from a config entry."""
-    store = hass.helpers.storage.Store(hass, STORAGE_VERSION, _quiz_storage_key(config_entry.entry_id))
+    store = Store(hass, STORAGE_VERSION, _quiz_storage_key(config_entry.entry_id))
     players_data = await store.async_load() or {"players": []}
     players = _normalize_players(players_data)
 
