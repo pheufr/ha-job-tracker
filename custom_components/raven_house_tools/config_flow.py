@@ -30,6 +30,17 @@ from .features import get_entry_feature
 from .quiz_entities import _quiz_storage_key, async_sync_players_from_storage
 
 
+def _normalize_media_value(value: Any) -> str:
+    """Normalize media selector output into a storable path/URL."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        media_id = value.get("media_content_id")
+        if isinstance(media_id, str):
+            return media_id.strip()
+    return ""
+
+
 class RavenHouseJobsConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Raven House Tools."""
 
@@ -126,7 +137,7 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                         "trigger_type": trigger_type,
                         "cron_expression": user_input.get("cron_expression"),
                         "days_interval": user_input.get("days_interval"),
-                        "image": user_input.get("image", ""),
+                        "image": _normalize_media_value(user_input.get("image", "")),
                         "priority": user_input.get("priority", 0),
                         "created": datetime.isoformat(utcnow()),
                     }
@@ -236,7 +247,7 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                         "trigger_type": trigger_type,
                         "cron_expression": user_input.get("cron_expression"),
                         "days_interval": user_input.get("days_interval"),
-                        "image": user_input.get("image", ""),
+                        "image": _normalize_media_value(user_input.get("image", "")),
                         "priority": user_input.get("priority", 0),
                     }
                 )
@@ -303,7 +314,7 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                         "id": str(uuid.uuid4())[:8],
                         "name": user_input["name"],
                         "alias": user_input["alias"],
-                        "photo": user_input.get("photo", ""),
+                        "photo": _normalize_media_value(user_input.get("photo", "")),
                         "total_score": 0,
                         "current_round_score": 0,
                         "last_round_score": 0,
@@ -400,7 +411,7 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                     {
                         "name": user_input["name"],
                         "alias": user_input["alias"],
-                        "photo": user_input.get("photo", ""),
+                        "photo": _normalize_media_value(user_input.get("photo", "")),
                         "enabled": bool(user_input.get("enabled", False)),
                     }
                 )

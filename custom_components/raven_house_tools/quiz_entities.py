@@ -56,6 +56,17 @@ from .features import entry_id_supports_quiz
 _LOGGER = logging.getLogger(__name__)
 
 
+def _normalize_media_value(value: Any) -> str:
+    """Normalize media selector output into a storable path/URL."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        media_id = value.get("media_content_id")
+        if isinstance(media_id, str):
+            return media_id.strip()
+    return ""
+
+
 def _quiz_storage_key(entry_id: str) -> str:
     return f"{DOMAIN}.players_{entry_id}"
 
@@ -283,7 +294,7 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
             "id": str(uuid.uuid4())[:8],
             "name": call.data["name"],
             "alias": call.data["alias"],
-            "photo": call.data.get("photo", ""),
+            "photo": _normalize_media_value(call.data.get("photo", "")),
             "total_score": 0,
             "current_round_score": 0,
             "last_round_score": 0,
@@ -399,7 +410,7 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
         if result is None:
             return
         entry_id, _, player = result
-        player["photo"] = str(call.data.get("photo", "")).strip()
+        player["photo"] = _normalize_media_value(call.data.get("photo", ""))
         await _save_players(hass, entry_id)
         await _broadcast(entry_id, player["id"])
 
@@ -504,7 +515,13 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
         {
             vol.Optional("entity_id"): cv.entity_id,
             vol.Optional("player_id"): cv.string,
-            vol.Required("photo"): cv.string,
+            vol.Required("photo"): vol.Any(
+                cv.string,
+                {
+                    vol.Required("media_content_id"): cv.string,
+                    vol.Optional("media_content_type"): cv.string,
+                },
+            ),
         }
     )
 
@@ -517,7 +534,13 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
                 {
                     vol.Required("name"): cv.string,
                     vol.Required("alias"): cv.string,
-                    vol.Optional("photo", default=""): cv.string,
+                    vol.Optional("photo", default=""): vol.Any(
+                        cv.string,
+                        {
+                            vol.Required("media_content_id"): cv.string,
+                            vol.Optional("media_content_type"): cv.string,
+                        },
+                    ),
                 }
             ),
         )

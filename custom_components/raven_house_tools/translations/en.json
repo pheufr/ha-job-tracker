@@ -145,6 +145,24 @@
         }
       }
     },
+    "update_job_image": {
+      "name": "Update Job Image",
+      "description": "Update a Raven House Job image using media picker/upload",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The primary job binary sensor entity ID"
+        },
+        "job_id": {
+          "name": "Job ID",
+          "description": "Job ID as an alternative to entity_id"
+        },
+        "image": {
+          "name": "Image",
+          "description": "Job image selected from media"
+        }
+      }
+    },
     "add_job": {
       "name": "Add Job",
       "description": "Add a Raven House Job",
@@ -167,7 +185,7 @@
         },
         "image": {
           "name": "Image",
-          "description": "Image URL or local path"
+          "description": "Image selected from media"
         },
         "priority": {
           "name": "Priority",
@@ -189,7 +207,7 @@
         },
         "photo": {
           "name": "Photo",
-          "description": "Player photo URL or path"
+          "description": "Player photo selected from media"
         }
       }
     },
@@ -285,7 +303,7 @@
         },
         "photo": {
           "name": "Photo",
-          "description": "New photo URL or local path"
+          "description": "New photo selected from media"
         }
       }
     },

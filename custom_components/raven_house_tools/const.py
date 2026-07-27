@@ -30,6 +30,7 @@ SERVICE_TRIGGER_JOB = "trigger_job"
 SERVICE_COMPLETE_JOB = "complete_job"
 SERVICE_DISMISS_JOB = "dismiss_job"
 SERVICE_RENAME_JOB = "rename_job"
+SERVICE_UPDATE_JOB_IMAGE = "update_job_image"
 SERVICE_ADD_JOB = "add_job"
 
 JOBS_SIGNAL_UPDATE = f"{DOMAIN}_job_update"

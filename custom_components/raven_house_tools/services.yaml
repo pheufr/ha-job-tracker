@@ -41,6 +41,20 @@ rename_job:
       description: New display name for the job
       example: "Kitchen Bins"
 
+update_job_image:
+  description: Update a Raven House Job image using media picker/upload
+  fields:
+    entity_id:
+      description: The primary job binary sensor entity ID
+      example: "binary_sensor.rh_jobs_trash_day"
+    job_id:
+      description: Job ID as an alternative to entity_id
+      example: "trashday"
+    image:
+      description: Job image selected from media
+      selector:
+        media: {}
+
 add_job:
   description: Add a Raven House Job
   fields:
@@ -57,7 +71,7 @@ add_job:
       description: Interval in days for frequency jobs
       example: 7
     image:
-      description: Optional image URL or path
+      description: Optional image selected from media
       example: "/local/jobs/bins.png"
       selector:
         media: {}
@@ -75,7 +89,7 @@ add_player:
       description: Player alias shown on the leaderboard
       example: "Ace"
     photo:
-      description: Player photo URL or local path
+      description: Player photo selected from media
       example: "/local/players/alice.jpg"
       selector:
         media: {}
@@ -146,7 +160,7 @@ update_player_photo:
       description: Player ID as an alternative to entity_id
       example: "player1"
     photo:
-      description: New photo URL or local path
+      description: New photo selected from media
       example: "/local/players/alice.jpg"
       selector:
         media: {}

@@ -63,6 +63,7 @@ Service domain: `raven_house_tools`
 - `complete_job`
 - `dismiss_job`
 - `rename_job`
+- `update_job_image`
 - `add_job`
 
 Example:
@@ -72,6 +73,17 @@ service: raven_house_tools.complete_job
 data:
   entity_id: binary_sensor.rh_jobs_trash_day
 ```
+
+Set/update job image without manually typing a URL:
+
+```yaml
+service: raven_house_tools.update_job_image
+data:
+  entity_id: binary_sensor.rh_jobs_trash_day
+  image: /media/local/jobs/trash.png
+```
+
+Use the Service UI media picker for `image`.
 
 ### Jobs Card
 
@@ -144,6 +156,17 @@ data:
   entity_id: sensor.rh_quiz_alice
   points: 5
 ```
+
+Update player photo without manually typing a URL:
+
+```yaml
+service: raven_house_tools.update_player_photo
+data:
+  entity_id: sensor.rh_quiz_alice
+  photo: /media/local/players/alice.png
+```
+
+Use the Service UI media picker for `photo`.
 
 ### Quiz Cards
 

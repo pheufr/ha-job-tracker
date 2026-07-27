@@ -44,6 +44,7 @@ from .const import (
     SERVICE_COMPLETE_JOB,
     SERVICE_DISMISS_JOB,
     SERVICE_RENAME_JOB,
+    SERVICE_UPDATE_JOB_IMAGE,
     SERVICE_TRIGGER_JOB,
     STORAGE_VERSION,
     TRIGGER_TYPE_FREQUENCY,
@@ -53,6 +54,17 @@ from .const import (
 from .features import entry_id_supports_jobs
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _normalize_media_value(value: Any) -> str:
+    """Normalize media selector output into a storable path/URL."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        media_id = value.get("media_content_id")
+        if isinstance(media_id, str):
+            return media_id.strip()
+    return ""
 
 
 def _jobs_storage_key(entry_id: str) -> str:
@@ -453,7 +465,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
                     "trigger_type": trigger_type,
                     "cron_expression": call.data.get("cron_expression"),
                     "days_interval": call.data.get("days_interval"),
-                    "image": call.data.get("image", ""),
+                    "image": _normalize_media_value(call.data.get("image", "")),
                     "priority": int(call.data.get("priority", 0)),
                     "created": utcnow().isoformat(),
                     "manual_due": False,
@@ -462,6 +474,15 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
             await _save_jobs(hass, entry_id)
             await async_sync_jobs_from_storage(hass, entry_id)
             return
+
+    async def _update_job_image(call: ServiceCall) -> None:
+        result = _find_job_by_target(hass, call.data.get("entity_id"), call.data.get("job_id"))
+        if result is None:
+            return
+        entry_id, _, job = result
+        job["image"] = _normalize_media_value(call.data.get("image", ""))
+        await _save_jobs(hass, entry_id)
+        async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
 
     target_schema = vol.Schema(
         {
@@ -477,7 +498,13 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
             ),
             vol.Optional("cron_expression"): cv.string,
             vol.Optional("days_interval"): cv.positive_int,
-            vol.Optional("image", default=""): cv.string,
+            vol.Optional("image", default=""): vol.Any(
+                cv.string,
+                {
+                    vol.Required("media_content_id"): cv.string,
+                    vol.Optional("media_content_type"): cv.string,
+                },
+            ),
             vol.Optional("priority", default=0): vol.Coerce(int),
         }
     )
@@ -486,6 +513,19 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
             vol.Optional("entity_id"): cv.entity_id,
             vol.Optional("job_id"): cv.string,
             vol.Required("name"): cv.string,
+        }
+    )
+    image_schema = vol.Schema(
+        {
+            vol.Optional("entity_id"): cv.entity_id,
+            vol.Optional("job_id"): cv.string,
+            vol.Required("image"): vol.Any(
+                cv.string,
+                {
+                    vol.Required("media_content_id"): cv.string,
+                    vol.Optional("media_content_type"): cv.string,
+                },
+            ),
         }
     )
 
@@ -500,6 +540,14 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
 
     if not hass.services.has_service(DOMAIN, SERVICE_RENAME_JOB):
         hass.services.async_register(DOMAIN, SERVICE_RENAME_JOB, _rename_job, schema=rename_schema)
+
+    if not hass.services.has_service(DOMAIN, SERVICE_UPDATE_JOB_IMAGE):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_UPDATE_JOB_IMAGE,
+            _update_job_image,
+            schema=image_schema,
+        )
 
     if not hass.services.has_service(DOMAIN, SERVICE_ADD_JOB):
         hass.services.async_register(DOMAIN, SERVICE_ADD_JOB, _add_job, schema=add_job_schema)
