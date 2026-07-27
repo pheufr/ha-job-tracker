@@ -1,6 +1,6 @@
 # Home Assistant Raven Castle Tools
 
-This repository ships a single HACS-installed Home Assistant integration, `raven_castle_jobs`, which is presented in Home Assistant as `Raven Castle Tools`.
+This repository ships a single HACS-installed Home Assistant integration, `raven_castle_tools`, which is presented in Home Assistant as `Raven Castle Tools`.
 
 That integration exposes both feature areas:
 
@@ -17,7 +17,7 @@ That integration exposes both feature areas:
 5. Use the integration's `Configure` action to manage Jobs and Quiz players.
 
 ### Manual
-1. Copy `custom_components/raven_castle_jobs` into your Home Assistant `custom_components` directory.
+1. Copy `custom_components/raven_castle_tools` into your Home Assistant `custom_components` directory.
 2. Restart Home Assistant.
 3. Add the `Raven Castle Tools` integration from Settings → Devices & Services.
 
@@ -55,7 +55,7 @@ Each job supports:
 
 ### Services
 
-Service domain: `raven_castle_jobs`
+Service domain: `raven_castle_tools`
 
 - `trigger_job`
 - `complete_job`
@@ -63,7 +63,7 @@ Service domain: `raven_castle_jobs`
 Example:
 
 ```yaml
-service: raven_castle_jobs.complete_job
+service: raven_castle_tools.complete_job
 data:
   entity_id: binary_sensor.rc_jobs_trash_day
 ```
@@ -110,7 +110,7 @@ Each player supports:
 
 ### Services
 
-Service domain: `raven_castle_quiz`
+Service domain: `raven_castle_tools`
 
 - `add_player`
 - `remove_player`
@@ -125,7 +125,7 @@ Service domain: `raven_castle_quiz`
 Example:
 
 ```yaml
-service: raven_castle_quiz.add_points
+service: raven_castle_tools.add_points
 data:
   entity_id: sensor.rc_quiz_alice
   points: 5

@@ -1,6 +1,6 @@
-"""Constants for Raven Castle Jobs."""
+"""Constants for Raven Castle Tools jobs support."""
 
-DOMAIN = "raven_castle_jobs"
+DOMAIN = "raven_castle_tools"
 
 PREFIX_JOBS = "rc_jobs"
 STORAGE_VERSION = 1

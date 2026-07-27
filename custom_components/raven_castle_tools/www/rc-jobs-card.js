@@ -78,7 +78,7 @@ class RCJobsCard extends HTMLElement {
     const entityId = container.getAttribute("data-entity-id");
     if (!entityId) return;
 
-    this._hass.callService("raven_castle_jobs", "complete_job", {
+    this._hass.callService("raven_castle_tools", "complete_job", {
       entity_id: entityId,
     });
 

@@ -39,7 +39,7 @@ class RcQuizMasterCard extends HTMLElement {
   }
 
   _call(service, data = {}) {
-    return this._hass.callService("raven_castle_quiz", service, data);
+    return this._hass.callService("raven_castle_tools", service, data);
   }
 
   _renderPhoto(photo, name) {
