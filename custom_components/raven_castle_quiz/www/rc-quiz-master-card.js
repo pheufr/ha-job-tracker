@@ -14,15 +14,20 @@ class RcQuizMasterCard extends HTMLElement {
   _players() {
     const players = [];
     for (const [entityId, state] of Object.entries(this._hass.states)) {
-      if (!entityId.startsWith("sensor.rc_quiz_") || entityId.endsWith("_round")) {
+      if (!entityId.startsWith("sensor.rc_quiz_")) {
         continue;
       }
+
       const attrs = state.attributes || {};
+      if (attrs.player_metric !== "total_score") {
+        continue;
+      }
+
       players.push({
         entityId,
-        name: attrs.name || entityId,
-        alias: attrs.alias || "",
-        photo: attrs.photo || "",
+        name: attrs.player_name || entityId,
+        alias: attrs.player_alias || "",
+        photo: attrs.player_photo || "",
         enabled: Boolean(attrs.enabled),
         round: Number(attrs.current_round_score || 0),
         total: Number(state.state || 0),
@@ -34,7 +39,7 @@ class RcQuizMasterCard extends HTMLElement {
   }
 
   _call(service, data = {}) {
-    return this._hass.callService("raven_castle_tools", service, data);
+    return this._hass.callService("raven_castle_quiz", service, data);
   }
 
   _renderPhoto(photo, name) {
@@ -161,5 +166,5 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "rc-quiz-master-card",
   name: "RC Quiz Master Card",
-  description: "Master control panel for RC Quiz",
+  description: "Master control panel for Raven Castle Quiz",
 });

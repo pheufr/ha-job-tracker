@@ -1,0 +1,96 @@
+{
+  "title": "Raven Castle Jobs",
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Only a single Raven Castle Jobs instance is supported."
+    },
+    "step": {
+      "user": {
+        "title": "Raven Castle Jobs",
+        "description": "Configure Raven Castle Jobs"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Raven Castle Jobs",
+        "menu_options": {
+          "create_job": "Add Job",
+          "list_jobs": "List Jobs"
+        }
+      },
+      "create_job": {
+        "title": "Add Raven Castle Job",
+        "data": {
+          "name": "Name",
+          "trigger_type": "Trigger Type",
+          "cron_expression": "Cron Expression",
+          "days_interval": "Days Interval",
+          "image": "Image",
+          "priority": "Priority"
+        }
+      },
+      "list_jobs": {
+        "title": "List Jobs",
+        "data": {
+          "job_id": "Job"
+        }
+      },
+      "edit_job": {
+        "title": "Edit Job",
+        "data": {
+          "name": "Name",
+          "trigger_type": "Trigger Type",
+          "cron_expression": "Cron Expression",
+          "days_interval": "Days Interval",
+          "image": "Image",
+          "priority": "Priority",
+          "action": "Action"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name is required",
+      "cron_required": "Cron expression is required",
+      "days_required": "Days interval must be greater than 0"
+    },
+    "abort": {
+      "job_created": "Job created",
+      "job_updated": "Job updated",
+      "job_deleted": "Job deleted",
+      "job_not_found": "Job not found",
+      "no_jobs": "No jobs found"
+    }
+  },
+  "services": {
+    "trigger_job": {
+      "name": "Trigger Job",
+      "description": "Manually trigger a Raven Castle Job to mark it as due",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The primary job binary sensor entity ID"
+        },
+        "job_id": {
+          "name": "Job ID",
+          "description": "Job ID as an alternative to entity_id"
+        }
+      }
+    },
+    "complete_job": {
+      "name": "Complete Job",
+      "description": "Mark a Raven Castle Job as completed",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "The primary job binary sensor entity ID"
+        },
+        "job_id": {
+          "name": "Job ID",
+          "description": "Job ID as an alternative to entity_id"
+        }
+      }
+    }
+  }
+}

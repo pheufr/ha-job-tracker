@@ -1,171 +1,142 @@
 # Home Assistant Raven Castle Tools
 
-A multi-feature Home Assistant custom integration providing tools for home automation.
+This repository now ships two supported Home Assistant custom integrations:
 
-## Features
+- `raven_castle_jobs`
+- `raven_castle_quiz`
 
-### RC Jobs ✅
-Track and manage recurring jobs/tasks with customizable schedules or frequencies. Each job is exposed as a binary sensor that automatically tracks when it is due.
-
-**Entity naming**: `binary_sensor.rc_jobs_{job_id}`
-
-### RC Quiz ✅
-Interactive quiz system with player tracking, scores per round, and custom Lovelace cards.
-
-**Entity naming**: `sensor.rc_quiz_{player_id}`
+Each feature area has its own config entry, services, frontend assets, and device model.
 
 ## Installation
 
-### HACS (recommended)
-1. Add this repository to HACS as a custom repository
-2. Install "Raven Castle Tools" from HACS
-3. Restart Home Assistant
-4. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle Tools
+### HACS
+1. Add this repository as a custom repository in HACS.
+2. Install the repository.
+3. Restart Home Assistant.
+4. Add one or both integrations from Settings → Devices & Services:
+   - Raven Castle Jobs
+   - Raven Castle Quiz
 
 ### Manual
-1. Copy `custom_components/raven_castle_tools/` to your Home Assistant `custom_components` folder
-2. Restart Home Assistant
-3. Add the integration via Settings → Devices & Services → Add Integration → Raven Castle Tools
+1. Copy the `custom_components/` folders you want into your Home Assistant `custom_components` directory.
+2. Restart Home Assistant.
+3. Add the integrations from Settings → Devices & Services.
 
-### Migration from Job Manager
-If you previously used the `job_manager` integration, Raven Castle Tools will automatically migrate your data:
-- Entity IDs will be updated: `binary_sensor.job_manager_*` → `binary_sensor.rc_jobs_*`
-- All job data (schedules, last completed, etc.) is preserved
-- **Note**: Update any automations or scripts that reference the old entity IDs
+## Raven Castle Jobs
 
-## RC Jobs
+Raven Castle Jobs tracks recurring household jobs as individual devices.
 
-### Creating Jobs
+### Device Model
 
-Jobs are created and managed through the Home Assistant UI via the integration's options flow (Settings → Devices & Services → Raven Castle Tools → Configure → Manage RC Jobs).
+Each job becomes one device with these entities:
+
+- `binary_sensor.rc_jobs_{job_id}`: primary due / not-due state
+- `sensor.rc_jobs_{job_id}_last_triggered`
+- `sensor.rc_jobs_{job_id}_last_completed`
+- `sensor.rc_jobs_{job_id}_next_due`
+- `sensor.rc_jobs_{job_id}_created`
+- `sensor.rc_jobs_{job_id}_priority`
+
+The primary binary sensor also keeps the scheduling metadata and card-friendly attributes such as `image`, `priority`, `trigger_type`, `cron_expression`, and `days_interval`.
+
+### Managing Jobs
+
+Jobs are added and edited from the integration options flow:
+
+Settings → Devices & Services → Raven Castle Jobs → Configure
 
 Each job supports:
-- **name**: Display name
-- **trigger_type**: `schedule` or `frequency`
-- **cron_expression**: For schedule type (e.g., `0 0 1 * *` for 1st of month)
-- **days_interval**: For frequency type (e.g., `30` for every 30 days)
-- **image**: URL to an image to display in the picture card
-- **priority**: Integer priority level (higher = shown first in picture card)
+
+- `name`
+- `trigger_type`: `schedule` or `frequency`
+- `cron_expression`
+- `days_interval`
+- `image`
+- `priority`
 
 ### Services
 
-#### `raven_castle_tools.trigger_job`
+Service domain: `raven_castle_jobs`
 
-Manually trigger a job to mark it as due:
+- `trigger_job`
+- `complete_job`
+
+Example:
 
 ```yaml
-service: raven_castle_tools.trigger_job
+service: raven_castle_jobs.complete_job
 data:
   entity_id: binary_sensor.rc_jobs_trash_day
 ```
 
-#### `raven_castle_tools.complete_job`
+### Jobs Card
 
-Mark a job as completed:
-
-```yaml
-service: raven_castle_tools.complete_job
-data:
-  entity_id: binary_sensor.rc_jobs_trash_day
-```
-
-### RC Jobs Card
-
-Add a custom Lovelace card to display job images. First register the resource in Lovelace settings:
-`/local/raven_castle_tools/rc-jobs-card.js`
-
-Then use it in your dashboard:
+The jobs card is auto-registered by the integration.
 
 ```yaml
 type: custom:rc-jobs-card
 job_entities:
   - binary_sensor.rc_jobs_trash_day
   - binary_sensor.rc_jobs_laundry
-  - binary_sensor.rc_jobs_yard_work
 ```
 
-**Features:**
-- Shows only due jobs with assigned images
-- Sorted by priority (highest first)
-- Click on an image to complete the job
-- Hover tooltip shows job name and priority
+## Raven Castle Quiz
 
-### Job Trigger Types
+Raven Castle Quiz manages quiz participants as individual devices.
 
-#### Schedule (Cron-based)
-Use standard cron expressions:
-- `0 9 * * 1` - Every Monday at 9 AM
-- `0 0 1 * *` - First day of every month at midnight
-- `0 0 * * 2` - Every Tuesday at midnight
+### Device Model
 
-#### Frequency (Interval-based)
-Specify the number of days:
-- `30` - Every 30 days since last completion
-- `7` - Every 7 days (weekly)
-- `1` - Every day
+Each player becomes one device with these entities:
 
-### State Attributes
+- `sensor.rc_quiz_{player_id}`: primary total score entity
+- `sensor.rc_quiz_{player_id}_round`
+- `sensor.rc_quiz_{player_id}_last_round`
+- `sensor.rc_quiz_{player_id}_alias`
+- `binary_sensor.rc_quiz_{player_id}_enabled`
 
-Each RC Jobs binary sensor includes the following attributes:
-
-- `trigger_type`: The type of trigger (`schedule` or `frequency`)
-- `cron_expression`: The cron expression (for schedule type)
-- `days_interval`: The interval in days (for frequency type)
-- `image`: URL to the job's image
-- `priority`: Priority level for sorting
-- `last_completed`: ISO timestamp of last completion
-- `last_triggered`: ISO timestamp of last trigger
-- `created`: ISO timestamp when the job was created
-
-## RC Quiz
-
-RC Quiz adds player-based score tracking for quiz games.
+The primary total-score entity keeps player metadata in its attributes, including `player_name`, `player_alias`, `player_photo`, `current_round_score`, `last_round_score`, and `enabled`.
 
 ### Managing Players
 
-Players are managed through the integration's options flow (Settings → Devices & Services → Raven Castle Tools → Configure → Manage RC Quiz).
+Players are added and edited from the integration options flow:
 
-Each player has:
-- **name**: Full name
-- **alias**: Display name shown on leaderboard
-- **photo**: URL or local path to player photo
-- **enabled**: Whether the player is active in the current quiz
+Settings → Devices & Services → Raven Castle Quiz → Configure
 
-### Entities
+Each player supports:
 
-Per player, two sensors are created:
-- `sensor.rc_quiz_{player_id}` - Total score (with all player attributes)
-- `sensor.rc_quiz_{player_id}_round` - Current round score
+- `name`
+- `alias`
+- `photo`
+- `enabled`
 
 ### Services
 
-All services are under the `raven_castle_tools` domain:
+Service domain: `raven_castle_quiz`
 
-| Service | Description |
-|---------|-------------|
-| `add_player` | Add a new quiz player |
-| `remove_player` | Remove a player permanently |
-| `enable_player` | Enable a player for the current quiz |
-| `disable_player` | Disable a player for the current quiz |
-| `add_points` | Add points to a player's round score |
-| `remove_points` | Remove points from a player's round score |
-| `start_new_round` | Finalise current round scores into totals and reset round |
-| `start_new_quiz` | Reset all scores to zero |
-| `reset_quiz` | Reset all scores and disable all players |
+- `add_player`
+- `remove_player`
+- `enable_player`
+- `disable_player`
+- `add_points`
+- `remove_points`
+- `start_new_round`
+- `start_new_quiz`
+- `reset_quiz`
 
-### RC Quiz Cards
+Example:
 
-Three custom Lovelace cards are included and automatically registered with the HA frontend — no manual resource configuration needed.
+```yaml
+service: raven_castle_quiz.add_points
+data:
+  entity_id: sensor.rc_quiz_alice
+  points: 5
+```
 
-After installing the integration and restarting Home Assistant, the cards are available in Dashboard → Add Card:
+### Quiz Cards
 
-- **RC Jobs Card** (`rc-jobs-card`) — Shows due RC Jobs with images
-- **RC Quiz Leaderboard Card** (`rc-quiz-leaderboard-card`) — Shows players sorted by score
-- **RC Quiz Master Card** (`rc-quiz-master-card`) — Master control panel for adding/removing points
+The quiz cards are auto-registered by the integration.
 
-> **Note**: If cards don't appear immediately after installation, perform a hard browser refresh (Ctrl+Shift+R / Cmd+Shift+R).
-
-#### Leaderboard Card
+Leaderboard:
 
 ```yaml
 type: custom:rc-quiz-leaderboard-card
@@ -173,9 +144,7 @@ show_disabled: false
 max_players: 10
 ```
 
-Shows players ordered by total score with medals (🥇🥈🥉), photos, alias, and scores.
-
-#### Quiz Master Card
+Master control:
 
 ```yaml
 type: custom:rc-quiz-master-card
@@ -184,7 +153,10 @@ compact: false
 show_photos: true
 ```
 
-Shows all players alphabetically with controls to add/remove points, enable/disable players, and start new rounds.
+## Notes
+
+- Both integrations use local brand assets, so Home Assistant 2026.3 or newer is recommended.
+- If the custom cards or logos do not appear immediately after restart, perform a hard browser refresh.
 
 ## License
 

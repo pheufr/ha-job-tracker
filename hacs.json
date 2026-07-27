@@ -1,6 +1,6 @@
 {
   "name": "Raven Castle Tools",
   "render_readme": true,
-  "homeassistant": "2023.12.0",
-  "domains": ["binary_sensor", "sensor"]
+  "homeassistant": "2026.3.0",
+  "domains": ["raven_castle_jobs", "raven_castle_quiz"]
 }

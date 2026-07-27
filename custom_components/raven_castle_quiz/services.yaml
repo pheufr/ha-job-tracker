@@ -1,35 +1,21 @@
-trigger_job:
-  description: Trigger an RC Job immediately
-  fields:
-    entity_id:
-      description: The RC Jobs entity ID to trigger
-      example: "binary_sensor.rc_jobs_trash_day"
-
-complete_job:
-  description: Mark an RC Job as completed
-  fields:
-    entity_id:
-      description: The RC Jobs entity ID to complete
-      example: "binary_sensor.rc_jobs_trash_day"
-
 add_player:
-  description: Add a player to RC Quiz
+  description: Add a player to Raven Castle Quiz
   fields:
     name:
       description: Player full name
       example: "Alice Smith"
     alias:
-      description: Player alias shown on leaderboard
+      description: Player alias shown on the leaderboard
       example: "Ace"
     photo:
       description: Player photo URL or local path
       example: "/local/players/alice.jpg"
 
 remove_player:
-  description: Remove a player from RC Quiz permanently
+  description: Remove a player from Raven Castle Quiz permanently
   fields:
     entity_id:
-      description: Quiz player sensor entity ID
+      description: Any player entity ID
       example: "sensor.rc_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
@@ -39,7 +25,7 @@ enable_player:
   description: Enable a player for the current quiz
   fields:
     entity_id:
-      description: Quiz player sensor entity ID
+      description: Any player entity ID
       example: "sensor.rc_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
@@ -49,7 +35,7 @@ disable_player:
   description: Disable a player for the current quiz
   fields:
     entity_id:
-      description: Quiz player sensor entity ID
+      description: Any player entity ID
       example: "sensor.rc_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
@@ -59,20 +45,20 @@ add_points:
   description: Add points to a player's current round score
   fields:
     entity_id:
-      description: Quiz player sensor entity ID
+      description: Any player entity ID
       example: "sensor.rc_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
       example: "player1"
     points:
-      description: Number of points to add (can be negative)
+      description: Number of points to add
       example: 5
 
 remove_points:
   description: Remove points from a player's current round score
   fields:
     entity_id:
-      description: Quiz player sensor entity ID
+      description: Any player entity ID
       example: "sensor.rc_quiz_player1"
     player_id:
       description: Player ID as an alternative to entity_id
@@ -82,10 +68,10 @@ remove_points:
       example: 5
 
 start_new_round:
-  description: Start a new RC Quiz round
+  description: Move current round scores into totals and reset the current round
 
 start_new_quiz:
-  description: Start a new RC Quiz and reset all scores to zero
+  description: Reset all quiz scores to zero
 
 reset_quiz:
-  description: Reset RC Quiz scores and disable all players
+  description: Reset all scores and disable all players

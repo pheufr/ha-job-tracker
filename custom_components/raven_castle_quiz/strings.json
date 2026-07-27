@@ -1,60 +1,20 @@
 {
-  "title": "Raven Castle Tools",
+  "title": "Raven Castle Quiz",
   "config": {
+    "abort": {
+      "single_instance_allowed": "Only a single Raven Castle Quiz instance is supported."
+    },
     "step": {
       "user": {
-        "title": "Raven Castle Tools",
-        "description": "Configure Raven Castle Tools integration"
+        "title": "Raven Castle Quiz",
+        "description": "Configure Raven Castle Quiz"
       }
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Raven Castle Tools",
-        "menu_options": {
-          "manage_jobs": "Manage RC Jobs",
-          "manage_quiz": "Manage RC Quiz"
-        }
-      },
-      "manage_jobs": {
-        "title": "Manage RC Jobs",
-        "menu_options": {
-          "create_job": "Add Job",
-          "list_jobs": "List Jobs"
-        }
-      },
-      "create_job": {
-        "title": "Add RC Job",
-        "data": {
-          "name": "Name",
-          "trigger_type": "Trigger Type",
-          "cron_expression": "Cron Expression",
-          "days_interval": "Days Interval",
-          "image": "Image",
-          "priority": "Priority"
-        }
-      },
-      "list_jobs": {
-        "title": "List RC Jobs",
-        "data": {
-          "job_id": "Job"
-        }
-      },
-      "edit_job": {
-        "title": "Edit RC Job",
-        "data": {
-          "name": "Name",
-          "trigger_type": "Trigger Type",
-          "cron_expression": "Cron Expression",
-          "days_interval": "Days Interval",
-          "image": "Image",
-          "priority": "Priority",
-          "action": "Action"
-        }
-      },
-      "manage_quiz": {
-        "title": "Manage RC Quiz",
+        "title": "Raven Castle Quiz",
         "menu_options": {
           "add_player": "Add Player",
           "list_players": "List Players"
@@ -87,16 +47,9 @@
     },
     "error": {
       "name_required": "Name is required",
-      "alias_required": "Alias is required",
-      "cron_required": "Cron expression is required",
-      "days_required": "Days interval must be greater than 0"
+      "alias_required": "Alias is required"
     },
     "abort": {
-      "job_created": "Job created",
-      "job_updated": "Job updated",
-      "job_deleted": "Job deleted",
-      "job_not_found": "Job not found",
-      "no_jobs": "No jobs found",
       "player_created": "Player created",
       "player_updated": "Player updated",
       "player_deleted": "Player deleted",
@@ -105,29 +58,9 @@
     }
   },
   "services": {
-    "trigger_job": {
-      "name": "Trigger RC Job",
-      "description": "Manually trigger an RC Job to mark it as due",
-      "fields": {
-        "entity_id": {
-          "name": "Entity ID",
-          "description": "The RC Jobs entity ID to trigger"
-        }
-      }
-    },
-    "complete_job": {
-      "name": "Complete RC Job",
-      "description": "Mark an RC Job as completed",
-      "fields": {
-        "entity_id": {
-          "name": "Entity ID",
-          "description": "The RC Jobs entity ID to complete"
-        }
-      }
-    },
     "add_player": {
       "name": "Add Player",
-      "description": "Add a player to RC Quiz",
+      "description": "Add a player to Raven Castle Quiz",
       "fields": {
         "name": {
           "name": "Name",
@@ -145,57 +78,57 @@
     },
     "remove_player": {
       "name": "Remove Player",
-      "description": "Remove a player from RC Quiz permanently",
+      "description": "Remove a player from Raven Castle Quiz permanently",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
-          "description": "Player sensor entity ID"
+          "description": "Any player entity ID"
         },
         "player_id": {
           "name": "Player ID",
-          "description": "Player ID"
+          "description": "Player ID as an alternative to entity_id"
         }
       }
     },
     "enable_player": {
       "name": "Enable Player",
-      "description": "Enable player for current quiz",
+      "description": "Enable a player for the current quiz",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
-          "description": "Player sensor entity ID"
+          "description": "Any player entity ID"
         },
         "player_id": {
           "name": "Player ID",
-          "description": "Player ID"
+          "description": "Player ID as an alternative to entity_id"
         }
       }
     },
     "disable_player": {
       "name": "Disable Player",
-      "description": "Disable player for current quiz",
+      "description": "Disable a player for the current quiz",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
-          "description": "Player sensor entity ID"
+          "description": "Any player entity ID"
         },
         "player_id": {
           "name": "Player ID",
-          "description": "Player ID"
+          "description": "Player ID as an alternative to entity_id"
         }
       }
     },
     "add_points": {
       "name": "Add Points",
-      "description": "Add points to current round score",
+      "description": "Add points to the player's current round score",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
-          "description": "Player sensor entity ID"
+          "description": "Any player entity ID"
         },
         "player_id": {
           "name": "Player ID",
-          "description": "Player ID"
+          "description": "Player ID as an alternative to entity_id"
         },
         "points": {
           "name": "Points",
@@ -205,15 +138,15 @@
     },
     "remove_points": {
       "name": "Remove Points",
-      "description": "Remove points from current round score",
+      "description": "Remove points from the player's current round score",
       "fields": {
         "entity_id": {
           "name": "Entity ID",
-          "description": "Player sensor entity ID"
+          "description": "Any player entity ID"
         },
         "player_id": {
           "name": "Player ID",
-          "description": "Player ID"
+          "description": "Player ID as an alternative to entity_id"
         },
         "points": {
           "name": "Points",
@@ -223,7 +156,7 @@
     },
     "start_new_round": {
       "name": "Start New Round",
-      "description": "Move current round scores into totals and reset current round"
+      "description": "Move current round scores into totals and reset the current round"
     },
     "start_new_quiz": {
       "name": "Start New Quiz",

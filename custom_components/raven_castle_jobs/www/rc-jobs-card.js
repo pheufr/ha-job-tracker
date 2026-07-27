@@ -14,13 +14,9 @@ class RCJobsCard extends HTMLElement {
     const jobEntityIds = this._config.job_entities || [];
     const jobs = [];
 
-    // Collect all due jobs
     for (const entityId of jobEntityIds) {
       const state = this._hass.states[entityId];
-      if (!state) continue;
-
-      const isDue = state.state === "on";
-      if (!isDue) continue;
+      if (!state || state.state !== "on") continue;
 
       const attributes = state.attributes || {};
       const image = attributes.image || null;
@@ -36,17 +32,14 @@ class RCJobsCard extends HTMLElement {
       }
     }
 
-    // Sort by priority (highest first)
     jobs.sort((a, b) => b.priority - a.priority);
-
-    // Render
     this.innerHTML = this.renderJobs(jobs);
   }
 
   renderJobs(jobs) {
     if (jobs.length === 0) {
       return `
-        <div style="display: flex; align-items: center; justify-content: center; min-height: 200px; color: #666;">
+        <div style="display:flex;align-items:center;justify-content:center;min-height:200px;color:#666;">
           No due jobs
         </div>
       `;
@@ -55,21 +48,20 @@ class RCJobsCard extends HTMLElement {
     const jobsHtml = jobs
       .map(
         (job) => `
-      <div style="cursor: pointer; transition: opacity 0.2s;" 
+      <div style="cursor:pointer;transition:opacity 0.2s;"
            class="job-image-container"
            data-entity-id="${job.entityId}"
            title="${job.name} (Priority: ${job.priority})">
-        <img src="${job.image}" 
+        <img src="${job.image}"
              alt="${job.name}"
-             style="max-width: 100%; height: auto; display: block; border-radius: 4px;"
-             />
+             style="max-width:100%;height:auto;display:block;border-radius:4px;" />
       </div>
     `
       )
       .join("");
 
     return `
-      <div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 16px;">
+      <div style="display:flex;flex-wrap:wrap;gap:16px;padding:16px;">
         ${jobsHtml}
       </div>
     `;
@@ -86,12 +78,10 @@ class RCJobsCard extends HTMLElement {
     const entityId = container.getAttribute("data-entity-id");
     if (!entityId) return;
 
-    // Call complete_job service
-    this._hass.callService("raven_castle_tools", "complete_job", {
+    this._hass.callService("raven_castle_jobs", "complete_job", {
       entity_id: entityId,
     });
 
-    // Add feedback
     container.style.opacity = "0.5";
     setTimeout(() => {
       container.style.opacity = "1";
@@ -105,5 +95,5 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "rc-jobs-card",
   name: "RC Jobs Card",
-  description: "Shows due RC Jobs with images",
+  description: "Shows due Raven Castle Jobs with images",
 });

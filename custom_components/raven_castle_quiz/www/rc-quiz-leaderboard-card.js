@@ -14,11 +14,15 @@ class RcQuizLeaderboardCard extends HTMLElement {
     const players = [];
 
     for (const [entityId, state] of Object.entries(this._hass.states)) {
-      if (!entityId.startsWith("sensor.rc_quiz_") || entityId.endsWith("_round")) {
+      if (!entityId.startsWith("sensor.rc_quiz_")) {
         continue;
       }
 
       const attrs = state.attributes || {};
+      if (attrs.player_metric !== "total_score") {
+        continue;
+      }
+
       const enabled = Boolean(attrs.enabled);
       if (!showDisabled && !enabled) {
         continue;
@@ -26,8 +30,8 @@ class RcQuizLeaderboardCard extends HTMLElement {
 
       players.push({
         entityId,
-        alias: attrs.alias || attrs.name || entityId,
-        photo: attrs.photo || "",
+        alias: attrs.player_alias || attrs.player_name || entityId,
+        photo: attrs.player_photo || "",
         total: Number(state.state) || 0,
         round: Number(attrs.current_round_score || 0),
         lastRound: Number(attrs.last_round_score || 0),
@@ -93,5 +97,5 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "rc-quiz-leaderboard-card",
   name: "RC Quiz Leaderboard Card",
-  description: "Shows RC Quiz leaderboard sorted by score",
+  description: "Shows Raven Castle Quiz leaderboard sorted by score",
 });

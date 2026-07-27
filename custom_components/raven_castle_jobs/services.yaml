@@ -1,0 +1,19 @@
+trigger_job:
+  description: Trigger a Raven Castle Job immediately
+  fields:
+    entity_id:
+      description: The primary job binary sensor entity ID to trigger
+      example: "binary_sensor.rc_jobs_trash_day"
+    job_id:
+      description: Job ID as an alternative to entity_id
+      example: "trashday"
+
+complete_job:
+  description: Mark a Raven Castle Job as completed
+  fields:
+    entity_id:
+      description: The primary job binary sensor entity ID to complete
+      example: "binary_sensor.rc_jobs_trash_day"
+    job_id:
+      description: Job ID as an alternative to entity_id
+      example: "trashday"
