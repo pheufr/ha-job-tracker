@@ -8,6 +8,7 @@ import uuid
 import voluptuous as vol
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.storage import Store
 from homeassistant.util.dt import utcnow
 
 from .const import DOMAIN, STORAGE_VERSION
@@ -42,7 +43,7 @@ class QuizOptionsFlowMixin:
                 errors["alias"] = "alias_required"
 
             if not errors:
-                store = self.hass.helpers.storage.Store(
+                store = Store(
                     self.hass,
                     STORAGE_VERSION,
                     f"{DOMAIN}.quiz_{self._config_entry.entry_id}",
@@ -83,7 +84,7 @@ class QuizOptionsFlowMixin:
         self, user_input: Optional[dict[str, Any]] = None
     ) -> FlowResult:
         """Show player picker for editing/deleting."""
-        store = self.hass.helpers.storage.Store(
+        store = Store(
             self.hass,
             STORAGE_VERSION,
             f"{DOMAIN}.quiz_{self._config_entry.entry_id}",
@@ -121,7 +122,7 @@ class QuizOptionsFlowMixin:
         if not player_id:
             return self.async_abort(reason="player_not_found")
 
-        store = self.hass.helpers.storage.Store(
+        store = Store(
             self.hass,
             STORAGE_VERSION,
             f"{DOMAIN}.quiz_{self._config_entry.entry_id}",

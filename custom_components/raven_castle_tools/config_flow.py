@@ -12,6 +12,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.storage import Store
 from homeassistant.util.dt import utcnow
 
 from .const import (
@@ -93,7 +94,7 @@ class RavenCastleToolsOptionsFlow(config_entries.OptionsFlow, QuizOptionsFlowMix
                 errors["days_interval"] = "days_required"
 
             if not errors:
-                store = self.hass.helpers.storage.Store(
+                store = Store(
                     self.hass,
                     STORAGE_VERSION,
                     f"{DOMAIN}.jobs_{self._config_entry.entry_id}",
@@ -140,7 +141,7 @@ class RavenCastleToolsOptionsFlow(config_entries.OptionsFlow, QuizOptionsFlowMix
         self, user_input: Optional[dict[str, Any]] = None
     ) -> FlowResult:
         """Show list of jobs to edit/delete."""
-        store = self.hass.helpers.storage.Store(
+        store = Store(
             self.hass,
             STORAGE_VERSION,
             f"{DOMAIN}.jobs_{self._config_entry.entry_id}",
@@ -175,7 +176,7 @@ class RavenCastleToolsOptionsFlow(config_entries.OptionsFlow, QuizOptionsFlowMix
         if not job_id:
             return self.async_abort(reason="job_not_found")
 
-        store = self.hass.helpers.storage.Store(
+        store = Store(
             self.hass,
             STORAGE_VERSION,
             f"{DOMAIN}.jobs_{self._config_entry.entry_id}",
