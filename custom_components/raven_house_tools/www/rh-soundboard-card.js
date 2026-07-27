@@ -4,23 +4,56 @@ class RHSoundboardCard extends HTMLElement {
     this._connected = false;
     this._busy = false;
     this._selectedTarget = "";
+    this._playMode = "connected";
+    this._sessionState = null;
   }
 
   setConfig(config) {
-    this._config = config || {};
+    const safeConfig = config && typeof config === "object" ? config : {};
+    this._config = {
+      ...safeConfig,
+      clips: Array.isArray(safeConfig.clips)
+        ? safeConfig.clips.map((clip) => ({ ...clip }))
+        : [],
+    };
     this._columns = Number(this._config.columns || 4);
 
-    if (!Array.isArray(this._config.clips)) {
-      this._config.clips = [];
-    }
+    const configuredMode = String(this._config.default_mode || "connected").toLowerCase();
+    this._playMode = configuredMode === "direct" ? "direct" : "connected";
   }
 
   set hass(hass) {
     this._hass = hass;
+    this._syncSessionState();
     if (!this._selectedTarget) {
       this._selectedTarget = this._config.target || "";
     }
     this._render();
+  }
+
+  _syncSessionState() {
+    const state = this._hass?.states?.["sensor.rh_soundboard_session"];
+    if (!state) {
+      this._sessionState = null;
+      return;
+    }
+
+    const attrs = state.attributes || {};
+    this._sessionState = attrs;
+
+    const activeTarget = attrs.active_target || "";
+    if (!this._selectedTarget && activeTarget) {
+      this._selectedTarget = activeTarget;
+    }
+
+    const modeByTarget = attrs.mode_by_target || {};
+    const stateMode = modeByTarget[this._selectedTarget] || modeByTarget[activeTarget] || "";
+    if (stateMode === "connected" || stateMode === "direct") {
+      this._playMode = stateMode;
+    }
+
+    const selected = this._selectedTarget || activeTarget;
+    this._connected = Boolean(attrs.connected) && Boolean(selected) && activeTarget === selected;
   }
 
   _title() {
@@ -79,7 +112,15 @@ class RHSoundboardCard extends HTMLElement {
     if (this._busy) {
       return "Working...";
     }
-    return this._connected ? `Connected to ${this._selectedTarget}` : `Ready: ${this._selectedTarget}`;
+    if (this._sessionState) {
+      const pending = Number(this._sessionState.pending_requests || 0);
+      if (pending > 0) {
+        return `Queued: ${pending} request(s)`;
+      }
+    }
+    return this._connected
+      ? `Connected to ${this._selectedTarget}`
+      : `Ready (${this._playMode}): ${this._selectedTarget}`;
   }
 
   async _toggleConnection() {
@@ -99,6 +140,10 @@ class RHSoundboardCard extends HTMLElement {
         await this._call("soundboard_disconnect", { entity_id: target });
         this._connected = false;
       } else {
+        await this._call("soundboard_set_mode", {
+          entity_id: target,
+          mode: this._playMode,
+        });
         await this._call("soundboard_connect", {
           entity_id: target,
           dead_air_media: this._config.dead_air_media || "",
@@ -123,9 +168,26 @@ class RHSoundboardCard extends HTMLElement {
     await this._call("soundboard_play_clip", {
       entity_id: target,
       media: clip.media,
-      connected: this._connected,
+      mode: this._playMode,
+      connected: this._playMode === "connected",
       dead_air_media: this._config.dead_air_media || "",
     });
+  }
+
+  _renderModeSelector() {
+    if (this._config.show_mode_selector === false) {
+      return "";
+    }
+
+    return `
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <label for="rh-soundboard-mode" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;">Mode</label>
+        <select id="rh-soundboard-mode" style="padding:8px 10px;border-radius:8px;">
+          <option value="connected" ${this._playMode === "connected" ? "selected" : ""}>Connected session</option>
+          <option value="direct" ${this._playMode === "direct" ? "selected" : ""}>Direct play</option>
+        </select>
+      </div>
+    `;
   }
 
   _renderTargetSelector(players) {
@@ -166,6 +228,7 @@ class RHSoundboardCard extends HTMLElement {
       <ha-card${this._renderHeader()}>
         <div style="padding:16px;display:grid;gap:14px;">
           ${this._renderTargetSelector(players)}
+          ${this._renderModeSelector()}
           <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
             <button id="rh-soundboard-connect" style="padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;">
               ${buttonLabel}
@@ -209,6 +272,25 @@ class RHSoundboardCard extends HTMLElement {
         this._selectedTarget = event.currentTarget.value || "";
         if (this._selectedTarget) {
           await this._call("soundboard_set_target", { entity_id: this._selectedTarget });
+          await this._call("soundboard_set_mode", {
+            entity_id: this._selectedTarget,
+            mode: this._playMode,
+          });
+        }
+        this._render();
+      };
+    }
+
+    const modeSelect = this.querySelector("#rh-soundboard-mode");
+    if (modeSelect) {
+      modeSelect.onchange = async (event) => {
+        const nextMode = String(event.currentTarget.value || "connected").toLowerCase();
+        this._playMode = nextMode === "direct" ? "direct" : "connected";
+        if (this._selectedTarget) {
+          await this._call("soundboard_set_mode", {
+            entity_id: this._selectedTarget,
+            mode: this._playMode,
+          });
         }
         this._render();
       };

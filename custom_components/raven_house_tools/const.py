@@ -37,5 +37,6 @@ SERVICE_SOUNDBOARD_CONNECT = "soundboard_connect"
 SERVICE_SOUNDBOARD_DISCONNECT = "soundboard_disconnect"
 SERVICE_SOUNDBOARD_PLAY_CLIP = "soundboard_play_clip"
 SERVICE_SOUNDBOARD_SET_TARGET = "soundboard_set_target"
+SERVICE_SOUNDBOARD_SET_MODE = "soundboard_set_mode"
 
 JOBS_SIGNAL_UPDATE = f"{DOMAIN}_job_update"

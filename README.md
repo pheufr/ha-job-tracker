@@ -234,6 +234,7 @@ The Soundboard feature adds a custom card and services for low-latency short aud
 Service domain: `raven_house_tools`
 
 - `soundboard_set_target`
+- `soundboard_set_mode`
 - `soundboard_connect`
 - `soundboard_disconnect`
 - `soundboard_play_clip`
@@ -265,6 +266,8 @@ clips:
     label: Applause
     icon: mdi:hand-clap
     media: media-source://media_source/local/sfx/applause.mp3
+default_mode: connected
+show_mode_selector: true
 ```
 
 Clip fields:
@@ -273,6 +276,17 @@ Clip fields:
 - `label`: button text
 - `icon`: Material Design icon
 - `media`: media-source or URL/path to an audio file
+
+Optional card fields:
+
+- `default_mode`: `connected` (default) or `direct`
+- `show_mode_selector`: set `false` to hide the in-card mode select
+
+Runtime status sensor:
+
+- `sensor.rh_soundboard_session`
+
+The card reads this sensor to reflect live connection state, pending requests, and per-target playback mode.
 
 ## Notes
 
