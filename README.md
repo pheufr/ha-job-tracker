@@ -101,6 +101,50 @@ If you do not see Create folder or Upload in My media:
 3. Restart Home Assistant, then reopen the media picker.
 4. Select the image from the media browser, or provide `/media/local/jobs/<filename>` as the value.
 
+### Example Automations
+
+Calendar-driven trigger (example: `calendar.bins` and job `96566d0a`):
+
+```yaml
+alias: RH Jobs - Trigger from bins calendar
+mode: single
+triggers:
+  - trigger: calendar
+    entity_id: calendar.bins
+    event: start
+    offset: "-24:00:00"
+conditions:
+  - condition: template
+    value_template: >
+      {{ trigger.calendar_event.summary | lower == states('text.rh_jobs_96566d0a_name') | lower }}
+  - condition: template
+    value_template: >
+      {% set last_completed = states('sensor.rh_jobs_96566d0a_last_completed') %}
+      {{ last_completed in ['unknown', 'unavailable', 'none', '']
+         or (as_timestamp(now()) - as_timestamp(last_completed)) > 86400 }}
+actions:
+  - action: button.press
+    target:
+      entity_id: button.rh_jobs_96566d0a_trigger
+```
+
+Auto-dismiss/complete from a sensor state change:
+
+```yaml
+alias: RH Jobs - Auto complete from front door
+mode: single
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.front_door_opening
+    to: "on"
+actions:
+  - action: button.press
+    target:
+      entity_id: button.rh_jobs_96566d0a_complete
+```
+
+`binary_sensor` entities use `on`/`off` states in automations (`on` is shown as `Open` for `opening` device class sensors).
+
 ### Jobs Card
 
 The jobs card is auto-registered by the integration.
@@ -307,4 +351,3 @@ The card reads this sensor to reflect live connection state, pending requests, a
 ## License
 
 MIT
-
