@@ -94,6 +94,7 @@
 
     const jobEntityIds = this._jobEntityIds();
     const showAll = Boolean(this._config.show_all);
+    const showImages = this._config.show_images !== false;
     const jobs = [];
 
     for (const entityId of jobEntityIds) {
@@ -104,7 +105,7 @@
       if (!showAll && !isDue) continue;
 
       const attributes = state.attributes || {};
-      const image = this._displayImage(attributes.image || "");
+      const image = showImages ? this._displayImage(attributes.image || "") : "";
       const priority = attributes.priority || 0;
 
       jobs.push({
@@ -135,7 +136,7 @@
         : "";
     const baseStyle = job.isDue ? "" : "opacity:0.55;";
     return `
-      <button style="cursor:pointer;border:0;border-radius:10px;padding:12px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.25);font:inherit;text-align:left;display:flex;gap:12px;align-items:${orientation === "horizontal" ? "center" : "flex-start"};flex-direction:${tileDirection};${tileWidth}${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" title="${job.name} (Priority: ${job.priority})">
+      <button style="cursor:pointer;border:0;border-radius:10px;padding:12px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.25);font:inherit;text-align:left;display:flex;gap:12px;align-items:${orientation === "horizontal" ? "center" : "flex-start"};flex-direction:${tileDirection};${tileWidth}${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" data-job-name="${job.name}" title="${job.name} (Priority: ${job.priority})">
         ${imageHtml}
         <div style="min-width:0;">
           <div style="font-size:12px;opacity:0.7;margin-bottom:6px;">${job.isDue ? "Due" : "Complete"} | Priority ${job.priority}</div>
@@ -183,6 +184,14 @@
 
     const entityId = container.getAttribute("data-entity-id");
     if (!entityId) return;
+
+    const validationRequired = this._config.validation_required === true;
+    if (validationRequired) {
+      const jobName = container.getAttribute("data-job-name") || entityId;
+      if (!window.confirm(`Mark "${jobName}" as complete?`)) {
+        return;
+      }
+    }
 
     this._hass.callService("raven_house_tools", "complete_job", {
       entity_id: entityId,

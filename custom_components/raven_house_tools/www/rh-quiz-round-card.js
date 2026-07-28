@@ -200,18 +200,22 @@ class RHQuizRoundCard extends HTMLElement {
 
     const players = this._players();
     const winners = this._winners(players);
+    const showGrandTotal = this._config.show_grand_total !== false;
+    const showRoundTotal = this._config.show_round_total !== false;
 
     this.innerHTML = `
       <ha-card${this._renderHeader()}>
         <div style="padding:16px;display:grid;gap:18px;">
+          ${showGrandTotal ? `
           <section>
             <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:10px;">Current Total Winner${winners.length === 1 ? "" : "s"}</div>
             <div style="display:flex;flex-wrap:wrap;gap:10px;">${this._winnerBadges(winners)}</div>
-          </section>
+          </section>` : ""}
+          ${showRoundTotal ? `
           <section>
             <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:6px;">This Round Leaderboard</div>
             <div>${this._roundRows(players)}</div>
-          </section>
+          </section>` : ""}
         </div>
       </ha-card>
     `;
