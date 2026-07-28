@@ -104,9 +104,59 @@ add_job:
         media:
           accept:
             - image/*
+    icon:
+      description: Optional MDI icon name (e.g. mdi:trash-can)
+      example: "mdi:trash-can"
+      selector:
+        icon:
+    colour:
+      description: Optional colour for the icon background (CSS colour value)
+      example: "#4CAF50"
+      selector:
+        color_rgb:
     priority:
       description: Priority value
       example: 0
+
+update_job_icon:
+  description: Update the icon for a Raven House Job
+  fields:
+    entity_id:
+      description: The primary job binary sensor entity ID
+      example: "binary_sensor.rh_jobs_trash_day"
+      selector:
+        entity:
+          filter:
+            - integration: raven_house_tools
+              domain: binary_sensor
+    job_id:
+      description: Job ID as an alternative to entity_id
+      example: "trashday"
+    icon:
+      description: MDI icon name (e.g. mdi:trash-can)
+      example: "mdi:trash-can"
+      selector:
+        icon:
+
+update_job_colour:
+  description: Update the icon background colour for a Raven House Job
+  fields:
+    entity_id:
+      description: The primary job binary sensor entity ID
+      example: "binary_sensor.rh_jobs_trash_day"
+      selector:
+        entity:
+          filter:
+            - integration: raven_house_tools
+              domain: binary_sensor
+    job_id:
+      description: Job ID as an alternative to entity_id
+      example: "trashday"
+    colour:
+      description: CSS colour value for the icon background
+      example: "#4CAF50"
+      selector:
+        color_rgb:
 
 add_player:
   description: Add a player to Raven House Quiz
