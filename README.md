@@ -119,9 +119,11 @@ conditions:
       {{ trigger.calendar_event.summary | lower == states('text.rh_jobs_96566d0a_name') | lower }}
   - condition: template
     value_template: >
+      {% set due_window_hours = 24 %}
       {% set last_completed = states('sensor.rh_jobs_96566d0a_last_completed') %}
+      {% set last_completed_dt = as_datetime(last_completed, default=none) %}
       {{ last_completed in ['unknown', 'unavailable', 'none', '']
-         or (as_timestamp(now()) - as_timestamp(last_completed)) > (24 * 60 * 60) }}
+         or (last_completed_dt is not none and last_completed_dt < (now() - timedelta(hours=due_window_hours))) }}
 actions:
   - action: button.press
     target:
