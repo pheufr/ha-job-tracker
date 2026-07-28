@@ -103,7 +103,7 @@ If you do not see Create folder or Upload in My media:
 
 ### Example Automations
 
-Calendar-driven trigger (example: `calendar.bins` and job `96566d0a`):
+Calendar-driven trigger for all RH Jobs (example calendar: `calendar.bins`):
 
 ```yaml
 alias: RH Jobs - Trigger from bins calendar
@@ -113,21 +113,29 @@ triggers:
     entity_id: calendar.bins
     event: start
     offset: "-24:00:00"
-conditions:
-  - condition: template
-    value_template: >
-      {{ trigger.calendar_event.summary | lower == states('text.rh_jobs_96566d0a_name') | lower }}
-  - condition: template
-    value_template: >
-      {% set due_window_hours = 24 %}
-      {% set last_completed = states('sensor.rh_jobs_96566d0a_last_completed') %}
+variables:
+  due_window_hours: 24
+  jobs_to_trigger: >
+    {% set ns = namespace(ids=[]) %}
+    {% set event_summary = trigger.calendar_event.summary | lower | trim %}
+    {% for job in states.binary_sensor | selectattr('entity_id', 'search', '^binary_sensor\\.rh_jobs_') %}
+      {% set job_name = job.name | lower | trim %}
+      {% set job_id = job.entity_id | replace('binary_sensor.rh_jobs_', '') %}
+      {% set last_completed = states('sensor.rh_jobs_' ~ job_id ~ '_last_completed') %}
       {% set last_completed_dt = as_datetime(last_completed, default=none) %}
-      {{ last_completed in ['unknown', 'unavailable', '']
-         or (last_completed_dt is not none and last_completed_dt < (now() - timedelta(hours=due_window_hours))) }}
+      {% set completed_in_window = last_completed_dt is not none and last_completed_dt >= (now() - timedelta(hours=due_window_hours)) %}
+      {% if job_name == event_summary and not completed_in_window %}
+        {% set ns.ids = ns.ids + [job_id] %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.ids }}
 actions:
-  - action: button.press
-    target:
-      entity_id: button.rh_jobs_96566d0a_trigger
+  - repeat:
+      for_each: "{{ jobs_to_trigger }}"
+      sequence:
+        - action: button.press
+          target:
+            entity_id: "button.rh_jobs_{{ repeat.item }}_trigger"
 ```
 
 Auto-dismiss/complete from a sensor state change:
