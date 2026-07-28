@@ -94,6 +94,7 @@
 
     const jobEntityIds = this._jobEntityIds();
     const showAll = Boolean(this._config.show_all);
+    const showImages = this._config.show_images !== false;
     const jobs = [];
 
     for (const entityId of jobEntityIds) {
@@ -104,7 +105,7 @@
       if (!showAll && !isDue) continue;
 
       const attributes = state.attributes || {};
-      const image = this._displayImage(attributes.image || "");
+      const image = showImages ? this._displayImage(attributes.image || "") : "";
       const priority = attributes.priority || 0;
 
       jobs.push({
@@ -183,6 +184,14 @@
 
     const entityId = container.getAttribute("data-entity-id");
     if (!entityId) return;
+
+    const validationRequired = this._config.validation_required === true;
+    if (validationRequired) {
+      const jobName = container.getAttribute("title") || entityId;
+      if (!window.confirm(`Mark "${jobName.split(" (Priority")[0]}" as complete?`)) {
+        return;
+      }
+    }
 
     this._hass.callService("raven_house_tools", "complete_job", {
       entity_id: entityId,
