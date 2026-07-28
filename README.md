@@ -101,6 +101,60 @@ If you do not see Create folder or Upload in My media:
 3. Restart Home Assistant, then reopen the media picker.
 4. Select the image from the media browser, or provide `/media/local/jobs/<filename>` as the value.
 
+### Example Automations
+
+Calendar-driven trigger for all RH Jobs (example calendar: `calendar.bins`):
+
+```yaml
+alias: RH Jobs - Trigger from bins calendar
+mode: single
+triggers:
+  - trigger: calendar
+    entity_id: calendar.bins
+    event: start
+    offset: "-24:00:00"
+variables:
+  due_window_hours: 24
+  jobs_to_trigger: >
+    {% set ns = namespace(ids=[]) %}
+    {% set event_summary = trigger.calendar_event.summary | lower | trim %}
+    {% for job in states.binary_sensor | selectattr('entity_id', 'search', '^binary_sensor\\.rh_jobs_') %}
+      {% set job_name = job.name | lower | trim %}
+      {% set job_id = job.entity_id | replace('binary_sensor.rh_jobs_', '') %}
+      {% set last_completed = states('sensor.rh_jobs_' ~ job_id ~ '_last_completed') %}
+      {% set last_completed_ts = as_timestamp(last_completed, default=0) %}
+      {% set completed_in_window = last_completed_ts > 0 and (as_timestamp(now()) - last_completed_ts) <= (due_window_hours * 3600) %}
+      {% if job_name == event_summary and not completed_in_window %}
+        {% set ns.ids = ns.ids + [job_id] %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.ids }}
+actions:
+  - repeat:
+      for_each: "{{ jobs_to_trigger }}"
+      sequence:
+        - action: button.press
+          target:
+            entity_id: "button.rh_jobs_{{ repeat.item }}_trigger"
+```
+
+Auto-dismiss/complete from a sensor state change:
+
+```yaml
+alias: RH Jobs - Auto complete from front door
+mode: single
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.front_door_opening
+    to: "on" # "on" is shown as Open for opening binary_sensors
+actions:
+  - action: button.press
+    target:
+      entity_id: button.rh_jobs_96566d0a_complete
+```
+
+`binary_sensor` entities use `on`/`off` states in automations (`on` is shown as `Open` for `opening` device class sensors).
+
 ### Jobs Card
 
 The jobs card is auto-registered by the integration.
@@ -307,4 +361,3 @@ The card reads this sensor to reflect live connection state, pending requests, a
 ## License
 
 MIT
-
