@@ -122,8 +122,8 @@ variables:
       {% set job_name = job.name | lower | trim %}
       {% set job_id = job.entity_id | replace('binary_sensor.rh_jobs_', '') %}
       {% set last_completed = states('sensor.rh_jobs_' ~ job_id ~ '_last_completed') %}
-      {% set last_completed_dt = as_datetime(last_completed, default=none) %}
-      {% set completed_in_window = last_completed_dt is not none and last_completed_dt >= (now() - timedelta(hours=due_window_hours)) %}
+      {% set last_completed_ts = as_timestamp(last_completed, default=0) %}
+      {% set completed_in_window = last_completed_ts > 0 and (as_timestamp(now()) - last_completed_ts) <= (due_window_hours * 3600) %}
       {% if job_name == event_summary and not completed_in_window %}
         {% set ns.ids = ns.ids + [job_id] %}
       {% endif %}
