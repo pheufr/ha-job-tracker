@@ -122,7 +122,7 @@ conditions:
       {% set due_window_hours = 24 %}
       {% set last_completed = states('sensor.rh_jobs_96566d0a_last_completed') %}
       {% set last_completed_dt = as_datetime(last_completed, default=none) %}
-      {{ last_completed in ['unknown', 'unavailable', 'none', '']
+      {{ last_completed in ['unknown', 'unavailable', '']
          or (last_completed_dt is not none and last_completed_dt < (now() - timedelta(hours=due_window_hours))) }}
 actions:
   - action: button.press
@@ -138,7 +138,7 @@ mode: single
 triggers:
   - trigger: state
     entity_id: binary_sensor.front_door_opening
-    to: "on"
+    to: "on" # "on" is shown as Open for opening binary_sensors
 actions:
   - action: button.press
     target:
