@@ -121,7 +121,7 @@ conditions:
     value_template: >
       {% set last_completed = states('sensor.rh_jobs_96566d0a_last_completed') %}
       {{ last_completed in ['unknown', 'unavailable', 'none', '']
-         or (as_timestamp(now()) - as_timestamp(last_completed)) > 86400 }}
+         or (as_timestamp(now()) - as_timestamp(last_completed)) > (24 * 60 * 60) }}
 actions:
   - action: button.press
     target:
