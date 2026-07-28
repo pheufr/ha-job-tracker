@@ -26,10 +26,12 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util.dt import utcnow
 
 from .const import (
+    ATTR_COLOUR,
     ATTR_CREATED,
     ATTR_CRON_EXPRESSION,
     ATTR_DAYS_INTERVAL,
     ATTR_ENTITY_ROLE,
+    ATTR_ICON,
     ATTR_IMAGE,
     ATTR_JOB_ID,
     ATTR_LAST_COMPLETED,
@@ -44,6 +46,8 @@ from .const import (
     SERVICE_COMPLETE_JOB,
     SERVICE_DISMISS_JOB,
     SERVICE_RENAME_JOB,
+    SERVICE_UPDATE_JOB_COLOUR,
+    SERVICE_UPDATE_JOB_ICON,
     SERVICE_UPDATE_JOB_IMAGE,
     SERVICE_TRIGGER_JOB,
     STORAGE_VERSION,
@@ -103,6 +107,8 @@ def _normalize_job(job: dict[str, Any]) -> dict[str, Any]:
         "cron_expression": job.get("cron_expression"),
         "days_interval": job.get("days_interval"),
         "image": job.get("image", ""),
+        "icon": job.get("icon", ""),
+        "colour": job.get("colour", ""),
         "priority": int(job.get("priority", 0)),
         "created": _ensure_timezone_aware_iso(job.get("created") or utcnow().isoformat()),
         "last_completed": job.get("last_completed"),
@@ -371,6 +377,8 @@ def _build_job_text_entities(
         JobNameText(hass, entry_id, job_id),
         JobCronExpressionText(hass, entry_id, job_id),
         JobImageText(hass, entry_id, job_id),
+        JobIconText(hass, entry_id, job_id),
+        JobColourText(hass, entry_id, job_id),
     ]
 
 
@@ -494,6 +502,8 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
                     "cron_expression": call.data.get("cron_expression"),
                     "days_interval": call.data.get("days_interval"),
                     "image": _normalize_media_value(call.data.get("image", "")),
+                    "icon": str(call.data.get("icon", "")).strip(),
+                    "colour": str(call.data.get("colour", "")).strip(),
                     "priority": int(call.data.get("priority", 0)),
                     "created": utcnow().isoformat(),
                     "manual_due": False,
@@ -509,6 +519,24 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
             return
         entry_id, _, job = result
         job["image"] = _normalize_media_value(call.data.get("image", ""))
+        await _save_jobs(hass, entry_id)
+        async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
+
+    async def _update_job_icon(call: ServiceCall) -> None:
+        result = _find_job_by_target(hass, call.data.get("entity_id"), call.data.get("job_id"))
+        if result is None:
+            return
+        entry_id, _, job = result
+        job["icon"] = str(call.data.get("icon", "")).strip()
+        await _save_jobs(hass, entry_id)
+        async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
+
+    async def _update_job_colour(call: ServiceCall) -> None:
+        result = _find_job_by_target(hass, call.data.get("entity_id"), call.data.get("job_id"))
+        if result is None:
+            return
+        entry_id, _, job = result
+        job["colour"] = str(call.data.get("colour", "")).strip()
         await _save_jobs(hass, entry_id)
         async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
 
@@ -530,6 +558,8 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
                 cv.string,
                 MEDIA_SELECTOR_SCHEMA,
             ),
+            vol.Optional("icon", default=""): cv.string,
+            vol.Optional("colour", default=""): cv.string,
             vol.Optional("priority", default=0): vol.Coerce(int),
         }
     )
@@ -548,6 +578,20 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
                 cv.string,
                 MEDIA_SELECTOR_SCHEMA,
             ),
+        }
+    )
+    icon_schema = vol.Schema(
+        {
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
+            vol.Optional("job_id"): cv.string,
+            vol.Required("icon"): cv.string,
+        }
+    )
+    colour_schema = vol.Schema(
+        {
+            vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
+            vol.Optional("job_id"): cv.string,
+            vol.Required("colour"): cv.string,
         }
     )
 
@@ -569,6 +613,22 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
             SERVICE_UPDATE_JOB_IMAGE,
             _update_job_image,
             schema=image_schema,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_UPDATE_JOB_ICON):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_UPDATE_JOB_ICON,
+            _update_job_icon,
+            schema=icon_schema,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_UPDATE_JOB_COLOUR):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_UPDATE_JOB_COLOUR,
+            _update_job_colour,
+            schema=colour_schema,
         )
 
     if not hass.services.has_service(DOMAIN, SERVICE_ADD_JOB):
@@ -745,6 +805,8 @@ class JobDueBinarySensor(JobEntityBase, BinarySensorEntity):
             ATTR_LAST_TRIGGERED: job.get("last_triggered"),
             ATTR_CREATED: job.get("created"),
             ATTR_IMAGE: job.get("image", ""),
+            ATTR_ICON: job.get("icon", ""),
+            ATTR_COLOUR: job.get("colour", ""),
             ATTR_PRIORITY: int(job.get("priority", 0)),
             ATTR_NEXT_DUE: (_compute_next_due(job).isoformat() if _compute_next_due(job) else None),
         }
@@ -976,6 +1038,70 @@ class JobImageText(JobEntityBase, TextEntity):
         if not job:
             return
         job["image"] = value.strip()
+        await _save_jobs(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}")
+
+
+class JobIconText(JobEntityBase, TextEntity):
+    """Text entity for icon management."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, job_id: str) -> None:
+        super().__init__(hass, entry_id, job_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{job_id}_icon"
+        self.entity_id = f"text.{PREFIX_JOBS}_{job_id}_icon"
+        self._attr_name = "Icon"
+        self._attr_native_min = 0
+        self._attr_native_max = 120
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    @property
+    def available(self) -> bool:
+        return self._job is not None
+
+    @property
+    def native_value(self) -> str:
+        job = self._job or {}
+        return job.get("icon") or ""
+
+    async def async_set_value(self, value: str) -> None:
+        job = self._job
+        if not job:
+            return
+        job["icon"] = value.strip()
+        await _save_jobs(self.hass, self.entry_id)
+        async_dispatcher_send(self.hass, f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}")
+
+
+class JobColourText(JobEntityBase, TextEntity):
+    """Text entity for colour management."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str, job_id: str) -> None:
+        super().__init__(hass, entry_id, job_id)
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_{job_id}_colour"
+        self.entity_id = f"text.{PREFIX_JOBS}_{job_id}_colour"
+        self._attr_name = "Colour"
+        self._attr_native_min = 0
+        self._attr_native_max = 50
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(await self._subscribe_updates())
+
+    @property
+    def available(self) -> bool:
+        return self._job is not None
+
+    @property
+    def native_value(self) -> str:
+        job = self._job or {}
+        return job.get("colour") or ""
+
+    async def async_set_value(self, value: str) -> None:
+        job = self._job
+        if not job:
+            return
+        job["colour"] = value.strip()
         await _save_jobs(self.hass, self.entry_id)
         async_dispatcher_send(self.hass, f"{JOBS_SIGNAL_UPDATE}_{self.entry_id}_{self.job_id}")
 
