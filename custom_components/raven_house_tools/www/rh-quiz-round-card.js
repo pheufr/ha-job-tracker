@@ -1,4 +1,4 @@
-class RHQuizRoundCard extends HTMLElement {
+class RHQuizCard extends HTMLElement {
   constructor() {
     super();
     this._resolvedMediaUrls = new Map();
@@ -16,7 +16,7 @@ class RHQuizRoundCard extends HTMLElement {
 
   _title() {
     if (this._config.title === undefined) {
-      return "RH Quiz Round Summary";
+      return "RH Quiz Card";
     }
     return this._config.title;
   }
@@ -24,14 +24,6 @@ class RHQuizRoundCard extends HTMLElement {
   _renderHeader() {
     const title = this._title();
     return title === "" ? "" : ` header="${title}"`;
-  }
-
-  _photo(photo, label) {
-    const resolvedPhoto = this._displayImage(photo);
-    if (!resolvedPhoto) {
-      return `<div style="width:36px;height:36px;border-radius:50%;background:#999;color:white;display:flex;align-items:center;justify-content:center;font-size:13px;">${(label || "?").slice(0, 1).toUpperCase()}</div>`;
-    }
-    return `<img src="${resolvedPhoto}" alt="${label}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'" />`;
   }
 
   _displayImage(image) {
@@ -95,30 +87,24 @@ class RHQuizRoundCard extends HTMLElement {
         continue;
       }
 
+      const round = Number(attrs.current_round_score || 0);
+      const total = Number(state.state) || 0;
+
       players.push({
         entityId,
         alias: attrs.player_alias || attrs.player_name || entityId,
-        name: attrs.player_name || entityId,
         photo: attrs.player_photo || "",
-        total: Number(state.state) || 0,
-        round: Number(attrs.current_round_score || 0),
         enabled,
+        round,
+        total,
+        overall: total - round,
       });
     }
 
-    players.sort((a, b) => b.round - a.round || b.total - a.total || a.alias.localeCompare(b.alias));
     return players.slice(0, maxPlayers);
   }
 
-  _winners(players) {
-    if (!players.length) {
-      return [];
-    }
-    const highest = Math.max(...players.map((player) => player.total));
-    return players.filter((player) => player.total === highest);
-  }
-
-  _rankLabels(players) {
+  _rankLabels(players, scoreField) {
     const labels = [];
     let previousRank = 0;
 
@@ -130,65 +116,72 @@ class RHQuizRoundCard extends HTMLElement {
       }
 
       const previousPlayer = players[index - 1];
-      const isTied =
-        player.round === previousPlayer.round && player.total === previousPlayer.total;
-
-      if (isTied) {
+      if (player[scoreField] === previousPlayer[scoreField]) {
         labels.push("");
         return;
       }
 
       previousRank = index + 1;
-      if (previousRank === 2) {
-        labels.push("2nd");
-      } else if (previousRank === 3) {
-        labels.push("3rd");
-      } else {
-        labels.push(`#${previousRank}`);
-      }
+      if (previousRank === 2) labels.push("2nd");
+      else if (previousRank === 3) labels.push("3rd");
+      else labels.push(`#${previousRank}`);
     });
 
     return labels;
   }
 
-  _roundRows(players) {
+  _photo(photo, label, size = 36, radius = "50%") {
+    const resolvedPhoto = this._displayImage(photo);
+    if (!resolvedPhoto) {
+      return `<div style="width:${size}px;height:${size}px;border-radius:${radius};background:#999;color:white;display:flex;align-items:center;justify-content:center;font-size:${Math.max(12, Math.floor(size * 0.33))}px;">${(label || "?").slice(0, 1).toUpperCase()}</div>`;
+    }
+    return `<img src="${resolvedPhoto}" alt="${label}" style="width:${size}px;height:${size}px;border-radius:${radius};object-fit:cover;" onerror="this.style.display='none'" />`;
+  }
+
+  _winnerSection(roundPlayers) {
+    if (!roundPlayers.length) {
+      return `
+        <section>
+          <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:8px;">Winner</div>
+          <div style="opacity:0.7;">No winner yet</div>
+        </section>
+      `;
+    }
+
+    const winner = roundPlayers[0];
+    const winnerImage = this._displayImage(winner.photo);
+    const winnerScore = `${winner.round >= 0 ? "+" : ""}${winner.round}`;
+
+    return `
+      <section>
+        <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:8px;">Winner</div>
+        <div style="position:relative;min-height:200px;border-radius:14px;overflow:hidden;background:${winnerImage ? "center / cover no-repeat url('" + winnerImage + "')" : "var(--primary-color)"};">
+          <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0.25));"></div>
+          <div style="position:absolute;left:14px;right:14px;bottom:14px;color:#fff;">
+            <div style="font-size:20px;font-weight:700;line-height:1.2;">${winner.alias}</div>
+            <div style="font-size:14px;opacity:0.95;">${winnerScore}</div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  _leaderboardRows(players, scoreField, withPhoto = true) {
     if (!players.length) {
       return '<div style="padding:8px 0;opacity:0.7;">No players to display</div>';
     }
 
-    const rankLabels = this._rankLabels(players);
-
+    const labels = this._rankLabels(players, scoreField);
     return players
       .map(
         (player, index) => `
           <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(128,128,128,0.2);${player.enabled ? "" : "opacity:0.45;"}">
-            <div style="min-width:34px;font-weight:700;">${rankLabels[index]}</div>
-            ${this._photo(player.photo, player.alias)}
+            <div style="min-width:34px;font-weight:700;">${labels[index]}</div>
+            ${withPhoto ? this._photo(player.photo, player.alias) : ""}
             <div style="flex:1;min-width:0;">
               <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.alias}</div>
-              <div style="font-size:12px;opacity:0.8;">Total: ${player.total}</div>
             </div>
-            <div style="text-align:right;font-weight:700;">${player.round >= 0 ? "+" : ""}${player.round}</div>
-          </div>
-        `
-      )
-      .join("");
-  }
-
-  _winnerBadges(winners) {
-    if (!winners.length) {
-      return '<div style="opacity:0.7;">No total winner yet</div>';
-    }
-
-    return winners
-      .map(
-        (player) => `
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:999px;background:rgba(128,128,128,0.12);">
-            ${this._photo(player.photo, player.alias)}
-            <div>
-              <div style="font-weight:700;">${player.alias}</div>
-              <div style="font-size:12px;opacity:0.75;">Total ${player.total}</div>
-            </div>
+            <div style="text-align:right;font-weight:700;">${player[scoreField] >= 0 ? "+" : ""}${player[scoreField]}</div>
           </div>
         `
       )
@@ -199,22 +192,26 @@ class RHQuizRoundCard extends HTMLElement {
     if (!this._hass) return;
 
     const players = this._players();
-    const winners = this._winners(players);
-    const showGrandTotal = this._config.show_grand_total !== false;
-    const showRoundTotal = this._config.show_round_total !== false;
+    const roundPlayers = [...players].sort((a, b) => b.round - a.round || a.alias.localeCompare(b.alias));
+    const overallPlayers = [...players].sort((a, b) => b.overall - a.overall || a.alias.localeCompare(b.alias));
+
+    const showWinner = this._config.show_winner !== false;
+    const showLeaderboard = this._config.show_leaderboard !== false;
+    const showRoundLeaderboard = this._config.show_round_leaderboard !== false;
 
     this.innerHTML = `
       <ha-card${this._renderHeader()}>
         <div style="padding:16px;display:grid;gap:18px;">
-          ${showGrandTotal ? `
+          ${showWinner ? this._winnerSection(roundPlayers) : ""}
+          ${showLeaderboard ? `
           <section>
-            <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:10px;">Current Total Winner${winners.length === 1 ? "" : "s"}</div>
-            <div style="display:flex;flex-wrap:wrap;gap:10px;">${this._winnerBadges(winners)}</div>
+            <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:6px;">Leaderboard</div>
+            <div>${this._leaderboardRows(overallPlayers, "overall")}</div>
           </section>` : ""}
-          ${showRoundTotal ? `
+          ${showRoundLeaderboard ? `
           <section>
-            <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:6px;">This Round Leaderboard</div>
-            <div>${this._roundRows(players)}</div>
+            <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:6px;">This Round</div>
+            <div>${this._leaderboardRows(roundPlayers, "round")}</div>
           </section>` : ""}
         </div>
       </ha-card>
@@ -222,19 +219,23 @@ class RHQuizRoundCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 5;
+    return 6;
   }
 }
 
+if (!customElements.get("rh-quiz-card")) {
+  customElements.define("rh-quiz-card", RHQuizCard);
+}
+
 if (!customElements.get("rh-quiz-round-card")) {
-  customElements.define("rh-quiz-round-card", RHQuizRoundCard);
+  customElements.define("rh-quiz-round-card", RHQuizCard);
 }
 
 window.customCards = window.customCards || [];
-if (!window.customCards.find((card) => card.type === "rh-quiz-round-card")) {
+if (!window.customCards.find((card) => card.type === "rh-quiz-card")) {
   window.customCards.push({
-    type: "rh-quiz-round-card",
-    name: "RH Quiz Round Card",
-    description: "Shows this round leaderboard and the current total winners",
+    type: "rh-quiz-card",
+    name: "RH Quiz Card",
+    description: "Shows winner, leaderboard and round leaderboard",
   });
 }

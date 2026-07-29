@@ -30,6 +30,17 @@
     return this._config.orientation === "horizontal" ? "horizontal" : "vertical";
   }
 
+  _formatTriggered(lastTriggered) {
+    if (!lastTriggered) {
+      return "Never triggered";
+    }
+    const parsed = new Date(lastTriggered);
+    if (Number.isNaN(parsed.getTime())) {
+      return "Triggered";
+    }
+    return `Triggered ${parsed.toLocaleString()}`;
+  }
+
   _displayImage(image) {
     if (typeof image !== "string") {
       return "";
@@ -111,16 +122,17 @@
       jobs.push({
         entityId,
         image,
-        icon: attributes.icon || "",
+        icon: attributes.icon || state.attributes.icon || "mdi:clipboard-text-clock",
         colour: attributes.colour || "",
         isDue,
         priority,
         name: attributes.friendly_name || entityId,
+        lastTriggered: attributes.last_triggered || "",
       });
     }
 
     jobs.sort((a, b) => Number(b.isDue) - Number(a.isDue) || b.priority - a.priority || a.name.localeCompare(b.name));
-    this.innerHTML = this.renderJobs(jobs);
+    this.innerHTML = this.renderJobs(jobs, showImages);
   }
 
   _renderHeader() {
@@ -128,38 +140,50 @@
     return title === "" ? "" : ` header="${title}"`;
   }
 
-  _renderJobTile(job) {
+  _renderJobTile(job, showImages) {
     const orientation = this._orientation();
     const tileDirection = orientation === "horizontal" ? "row" : "column";
     const tileWidth = orientation === "horizontal" ? "min-width:260px;" : "width:100%;";
     const isHorizontal = orientation === "horizontal";
-    const imgSize = isHorizontal ? "72px" : "100%";
-    const imgMaxWidth = isHorizontal ? "72px" : "320px";
+    const imgSize = isHorizontal ? "96px" : "100%";
+    const imgMaxWidth = isHorizontal ? "96px" : "320px";
+    const iconBg = job.colour || "var(--primary-color)";
+    const iconStyle = `color:${iconBg};--mdi-icon-size:28px;`;
+    const fallbackIcon = job.icon || "mdi:clipboard-text-clock";
 
-    let mediaHtml = "";
-    if (job.image) {
-      mediaHtml = `<img src="${job.image}" alt="${job.name}" style="width:${imgSize};max-width:${imgMaxWidth};height:${isHorizontal ? "72px" : "auto"};aspect-ratio:${isHorizontal ? "1 / 1" : "auto"};object-fit:cover;display:block;border-radius:10px;" onerror="this.style.display='none'" />`;
-    } else if (job.icon) {
-      const iconBg = job.colour || "var(--primary-color)";
-      const iconBoxStyle = isHorizontal
-        ? `width:72px;min-width:72px;height:72px;border-radius:10px;background:${iconBg};display:flex;align-items:center;justify-content:center;`
-        : `width:100%;max-width:320px;height:120px;border-radius:10px;background:${iconBg};display:flex;align-items:center;justify-content:center;`;
-      mediaHtml = `<div style="${iconBoxStyle}"><ha-icon icon="${job.icon}" style="color:#fff;--mdi-icon-size:36px;"></ha-icon></div>`;
+    if (showImages && job.image) {
+      return `
+        <button style="cursor:pointer;border:0;padding:0;background:transparent;box-shadow:none;font:inherit;display:flex;${tileWidth}" class="job-image-container" data-entity-id="${job.entityId}" data-job-name="${job.name}" title="${job.name}">
+          <img src="${job.image}" alt="${job.name}" style="width:${imgSize};max-width:${imgMaxWidth};height:${isHorizontal ? "96px" : "auto"};aspect-ratio:${isHorizontal ? "1 / 1" : "auto"};object-fit:cover;display:block;border-radius:10px;" onerror="this.style.display='none'" />
+        </button>
+      `;
+    }
+
+    if (showImages) {
+      const iconBoxStyle = `aspect-ratio:1 / 1;width:${isHorizontal ? "96px" : "100%"};max-width:${isHorizontal ? "96px" : "320px"};min-width:${isHorizontal ? "96px" : "0"};border-radius:12px;background:${iconBg};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;box-sizing:border-box;`;
+      return `
+        <button style="cursor:pointer;border:0;padding:0;background:transparent;box-shadow:none;font:inherit;display:flex;${tileWidth}" class="job-image-container" data-entity-id="${job.entityId}" data-job-name="${job.name}" title="${job.name}">
+          <div style="${iconBoxStyle}">
+            <ha-icon icon="${fallbackIcon}" style="color:#fff;--mdi-icon-size:36px;"></ha-icon>
+            <div style="font-weight:700;color:#fff;text-align:center;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${job.name}</div>
+          </div>
+        </button>
+      `;
     }
 
     const baseStyle = job.isDue ? "" : "opacity:0.55;";
     return `
-      <button style="cursor:pointer;border:0;border-radius:10px;padding:12px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.25);font:inherit;text-align:left;display:flex;gap:12px;align-items:${isHorizontal ? "center" : "flex-start"};flex-direction:${tileDirection};${tileWidth}${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" data-job-name="${job.name}" title="${job.name} (Priority: ${job.priority})">
-        ${mediaHtml}
+      <button style="cursor:pointer;border:0;border-radius:12px;padding:12px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.22);font:inherit;text-align:left;display:flex;gap:12px;align-items:center;flex-direction:${tileDirection};${tileWidth}${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" data-job-name="${job.name}" title="${job.name}">
+        <ha-icon icon="${fallbackIcon}" style="${iconStyle}"></ha-icon>
         <div style="min-width:0;">
-          <div style="font-size:12px;opacity:0.7;margin-bottom:6px;">${job.isDue ? "Due" : "Complete"} | Priority ${job.priority}</div>
           <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${job.name}</div>
+          <div style="font-size:12px;opacity:0.72;">${this._formatTriggered(job.lastTriggered)}</div>
         </div>
       </button>
     `;
   }
 
-  renderJobs(jobs) {
+  renderJobs(jobs, showImages) {
     if (jobs.length === 0) {
       return `
         <ha-card${this._renderHeader()}>
@@ -170,7 +194,7 @@
       `;
     }
 
-    const jobsHtml = jobs.map((job) => this._renderJobTile(job)).join("");
+    const jobsHtml = jobs.map((job) => this._renderJobTile(job, showImages)).join("");
 
     const orientation = this._orientation();
     const listStyle =
