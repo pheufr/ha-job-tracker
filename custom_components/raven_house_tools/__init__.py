@@ -19,7 +19,6 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up Raven House Tools."""
     hass.data.setdefault(DOMAIN, {})
     hass.data.setdefault(QUIZ_DOMAIN, {})
-    await async_setup_frontend(hass)
     await async_setup_soundboard_services(hass)
     return True
 

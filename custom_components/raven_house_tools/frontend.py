@@ -10,7 +10,11 @@ from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 
+from .const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
+
+_FRONTEND_REGISTERED_KEY = f"{DOMAIN}_frontend_registered"
 
 _CARD_FILES = [
     "rh-jobs-card.js",
@@ -52,9 +56,18 @@ def _compute_assets_revision(static_path: Path) -> str:
 
 
 async def async_setup_frontend(hass: HomeAssistant) -> None:
-    """Register static paths and Lovelace module URLs for custom cards."""
+    """Register static paths and Lovelace module URLs for custom cards.
+
+    Safe to call multiple times — a guard flag ensures registration only
+    happens once per Home Assistant lifecycle.
+    """
+    if hass.data.get(_FRONTEND_REGISTERED_KEY):
+        _LOGGER.debug("Raven House Tools frontend already registered, skipping")
+        return
+
+    hass.data[_FRONTEND_REGISTERED_KEY] = True
+
     static_url = "/raven_house_tools"
-    module_base_absolute = "/raven_house_tools"
     static_path = Path(__file__).parent / "www"
 
     try:
@@ -68,11 +81,6 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
     version = await hass.async_add_executor_job(_compute_assets_revision, static_path)
 
     for card_file in _CARD_FILES:
-        versioned_absolute = f"{module_base_absolute}/{card_file}?v={version}"
-        add_extra_js_url(hass, versioned_absolute)
-        _LOGGER.debug("Registered Lovelace module URL: %s", versioned_absolute)
-
-        # Compatibility fallback for frontend builds that do not honor querystring resources.
-        plain_absolute = f"{module_base_absolute}/{card_file}"
-        add_extra_js_url(hass, plain_absolute)
-        _LOGGER.debug("Registered Lovelace module URL fallback: %s", plain_absolute)
+        url = f"{static_url}/{card_file}?v={version}"
+        add_extra_js_url(hass, url)
+        _LOGGER.debug("Registered Lovelace module URL: %s", url)
