@@ -113,18 +113,24 @@
       .map((points) => {
         const action = points > 0 ? "add" : "remove";
         const label = points > 0 ? `+${points}` : `${points}`;
-        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}">${label}</button>`;
+        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}" style="min-width:48px;">${label}</button>`;
       })
-      .join(" ");
+      .join("");
 
     return `
-      <tr style="${player.enabled ? "" : "opacity:0.45;"}">
-        <td>${this._renderPhoto(player.photo, player.name)} ${player.name}</td>
-        <td>${player.alias}</td>
-        <td>${player.round}</td>
-        <td>${player.total}</td>
-        <td>${actionButtons}</td>
-      </tr>
+      <div style="padding:10px 0;${player.enabled ? "" : "opacity:0.45;"}">
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+          ${this._renderPhoto(player.photo, player.name)}
+          <div style="min-width:0;">
+            <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.name}</div>
+            <div style="font-size:12px;opacity:0.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.alias || "No alias"}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <div style="font-size:${compact ? "11px" : "12px"};">Round: <strong>${player.round}</strong> | Total: <strong>${player.total}</strong></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">${actionButtons}</div>
+        </div>
+      </div>
     `;
   }
 
@@ -140,21 +146,8 @@
             <button data-action="new-round">Start New Round</button>
             <button data-action="new-quiz">Start New Quiz</button>
           </div>
-          <div style="overflow:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:${compact ? "12px" : "14px"};">
-              <thead>
-                <tr>
-                  <th style="text-align:left;">Name</th>
-                  <th style="text-align:left;">Alias</th>
-                  <th style="text-align:left;">Round</th>
-                  <th style="text-align:left;">Total</th>
-                  <th style="text-align:left;">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${players.map((player) => this._row(player, compact)).join("") || '<tr><td colspan="5">No players</td></tr>'}
-              </tbody>
-            </table>
+          <div style="font-size:${compact ? "12px" : "14px"};">
+            ${players.map((player, index) => `${this._row(player, compact)}${index < players.length - 1 ? '<hr style="border:none;border-top:1px solid rgba(128,128,128,0.25);margin:0;">' : ""}`).join("") || '<div>No players</div>'}
           </div>
         </div>
       </ha-card>

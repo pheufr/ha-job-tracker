@@ -161,6 +161,7 @@ The jobs card is auto-registered by the integration.
 
 ```yaml
 type: custom:rh-jobs-card
+show_images: true
 orientation: vertical
 job_entities:
   - binary_sensor.rh_jobs_trash_day
@@ -171,6 +172,8 @@ Jobs card layout options:
 
 - `orientation: vertical` (default) stacks due jobs top-to-bottom.
 - `orientation: horizontal` places jobs in a horizontal wrapping layout.
+- `show_images: true` (default) shows image-only tiles. Jobs without an image show a square icon tile using the job colour.
+- `show_images: false` shows an icon, job name, and last triggered timestamp.
 
 ## Raven House Quiz
 
@@ -262,10 +265,13 @@ If you do not see Create folder or Upload in My media:
 
 The quiz cards are auto-registered by the integration.
 
-Leaderboard:
+Quiz summary:
 
 ```yaml
-type: custom:rh-quiz-leaderboard-card
+type: custom:rh-quiz-card
+show_winner: true
+show_leaderboard: true
+show_round_leaderboard: true
 show_disabled: false
 max_players: 10
 ```
