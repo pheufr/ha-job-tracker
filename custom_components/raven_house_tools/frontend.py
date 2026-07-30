@@ -18,6 +18,7 @@ _FRONTEND_REGISTERED_KEY = f"{DOMAIN}_frontend_registered"
 
 _CARD_FILES = [
     "rh-jobs-card.js",
+    "rh-quiz-card.js",
     "rh-quiz-master-card.js",
     "rh-quiz-round-card.js",
     "rh-soundboard-card.js",

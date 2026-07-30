@@ -33,6 +33,8 @@ from .const import (
     ATTR_ENTITY_ROLE,
     ATTR_ICON,
     ATTR_IMAGE,
+    ATTR_JOB_COLOUR,
+    ATTR_JOB_ICON,
     ATTR_JOB_ID,
     ATTR_LAST_COMPLETED,
     ATTR_LAST_TRIGGERED,
@@ -88,6 +90,38 @@ def _normalize_media_value(value: Any) -> str:
         media_content_id = value.get("media_content_id")
         if isinstance(media_content_id, str):
             return media_content_id.strip()
+    return ""
+
+
+def _normalize_colour_value(value: Any) -> str:
+    """Normalize colour selector output into a CSS colour string."""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, dict):
+        if {"r", "g", "b"}.issubset(value):
+            try:
+                return "#{:02X}{:02X}{:02X}".format(
+                    int(value["r"]),
+                    int(value["g"]),
+                    int(value["b"]),
+                )
+            except (TypeError, ValueError):
+                return ""
+        rgb = value.get("rgb_color")
+        if isinstance(rgb, (list, tuple)) and len(rgb) == 3:
+            try:
+                return "#{:02X}{:02X}{:02X}".format(
+                    int(rgb[0]),
+                    int(rgb[1]),
+                    int(rgb[2]),
+                )
+            except (TypeError, ValueError):
+                return ""
+    if isinstance(value, (list, tuple)) and len(value) == 3:
+        try:
+            return "#{:02X}{:02X}{:02X}".format(int(value[0]), int(value[1]), int(value[2]))
+        except (TypeError, ValueError):
+            return ""
     return ""
 
 
@@ -503,7 +537,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
                     "days_interval": call.data.get("days_interval"),
                     "image": _normalize_media_value(call.data.get("image", "")),
                     "icon": str(call.data.get("icon", "")).strip(),
-                    "colour": str(call.data.get("colour", "")).strip(),
+                    "colour": _normalize_colour_value(call.data.get("colour", "")),
                     "priority": int(call.data.get("priority", 0)),
                     "created": utcnow().isoformat(),
                     "manual_due": False,
@@ -536,7 +570,7 @@ async def async_setup_jobs_services(hass: HomeAssistant) -> None:
         if result is None:
             return
         entry_id, _, job = result
-        job["colour"] = str(call.data.get("colour", "")).strip()
+        job["colour"] = _normalize_colour_value(call.data.get("colour", ""))
         await _save_jobs(hass, entry_id)
         async_dispatcher_send(hass, f"{JOBS_SIGNAL_UPDATE}_{entry_id}_{job['id']}")
 
@@ -807,6 +841,8 @@ class JobDueBinarySensor(JobEntityBase, BinarySensorEntity):
             ATTR_IMAGE: job.get("image", ""),
             ATTR_ICON: job.get("icon", ""),
             ATTR_COLOUR: job.get("colour", ""),
+            ATTR_JOB_ICON: job.get("icon", ""),
+            ATTR_JOB_COLOUR: job.get("colour", ""),
             ATTR_PRIORITY: int(job.get("priority", 0)),
             ATTR_NEXT_DUE: (_compute_next_due(job).isoformat() if _compute_next_due(job) else None),
         }

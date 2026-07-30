@@ -3,11 +3,14 @@
     super();
     this._resolvedMediaUrls = new Map();
     this._pendingResolutions = new Set();
+    this._mediaCacheTtlMs = 60 * 60 * 1000;
   }
 
   setConfig(config) {
     this._config = config || {};
-    this._pointButtons = [5, 1, -1, -5];
+    this._pointButtons = Array.isArray(this._config.point_buttons) && this._config.point_buttons.length
+      ? this._config.point_buttons
+      : [5, 1, -1, -5];
   }
 
   _title() {
@@ -78,11 +81,27 @@
     if (!trimmed.startsWith("media-source://")) {
       return trimmed;
     }
-    if (this._resolvedMediaUrls.has(trimmed)) {
-      return this._resolvedMediaUrls.get(trimmed) || "";
+    const cached = this._resolvedMediaUrls.get(trimmed);
+    if (cached && Date.now() - cached.resolvedAt < this._mediaCacheTtlMs) {
+      return cached.url || "";
     }
     this._resolveMediaSource(trimmed);
-    return "";
+    return cached?.url || "";
+  }
+
+  _normalizeResolvedUrl(url) {
+    if (typeof url !== "string" || !url) {
+      return "";
+    }
+    try {
+      const resolved = new URL(url, window.location.origin);
+      if (resolved.origin === window.location.origin) {
+        return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+      }
+    } catch (_err) {
+      return url;
+    }
+    return url;
   }
 
   _resolveMediaSource(mediaContentId) {
@@ -96,11 +115,17 @@
     this._hass
       .callWS({ type: "media_source/resolve_media", media_content_id: mediaContentId })
       .then((result) => {
-        const url = typeof result?.url === "string" ? result.url : "";
-        this._resolvedMediaUrls.set(mediaContentId, url);
+        const url = this._normalizeResolvedUrl(typeof result?.url === "string" ? result.url : "");
+        this._resolvedMediaUrls.set(mediaContentId, {
+          url,
+          resolvedAt: Date.now(),
+        });
       })
       .catch(() => {
-        this._resolvedMediaUrls.set(mediaContentId, "");
+        this._resolvedMediaUrls.set(mediaContentId, {
+          url: "",
+          resolvedAt: Date.now(),
+        });
       })
       .finally(() => {
         this._pendingResolutions.delete(mediaContentId);
@@ -108,27 +133,51 @@
       });
   }
 
+  _buttonStyle(primary = false) {
+    return [
+      "appearance:none",
+      "border:0",
+      "border-radius:999px",
+      `background:${primary ? "var(--primary-color)" : "var(--secondary-background-color)"}`,
+      `color:${primary ? "var(--text-primary-color, #fff)" : "var(--primary-text-color)"}`,
+      "padding:10px 12px",
+      "font:inherit",
+      "font-weight:700",
+      "cursor:pointer",
+      "min-height:40px",
+      "flex:1 1 0",
+      "box-sizing:border-box",
+      "text-align:center",
+    ].join(";");
+  }
+
   _row(player, compact) {
     const actionButtons = this._pointButtons
       .map((points) => {
         const action = points > 0 ? "add" : "remove";
         const label = points > 0 ? `+${points}` : `${points}`;
-        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}" style="min-width:48px;">${label}</button>`;
+        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}" style="${this._buttonStyle()}">${label}</button>`;
       })
       .join("");
 
     return `
-      <div style="padding:10px 0;${player.enabled ? "" : "opacity:0.45;"}">
-        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-          ${this._renderPhoto(player.photo, player.name)}
-          <div style="min-width:0;">
-            <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.name}</div>
-            <div style="font-size:12px;opacity:0.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.alias || "No alias"}</div>
+      <div style="padding:12px 0;display:grid;gap:10px;${player.enabled ? "" : "opacity:0.45;"}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+            ${this._renderPhoto(player.photo, player.name)}
+            <div style="min-width:0;">
+              <div style="display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;">
+                <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.alias || "No alias"}</div>
+                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.name}</div>
+              </div>
+              <div style="font-size:${compact ? "11px" : "12px"};opacity:0.75;">Total Points: <strong>${player.total}</strong></div>
+            </div>
           </div>
+          <div style="font-size:${compact ? "20px" : "24px"};font-weight:800;line-height:1;">${player.round >= 0 ? "+" : ""}${player.round}</div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;">
-          <div style="font-size:${compact ? "11px" : "12px"};">Round: <strong>${player.round}</strong> | Total: <strong>${player.total}</strong></div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">${actionButtons}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${actionButtons}
+          <button data-action="joker" data-entity="${player.entityId}" style="${this._buttonStyle(true)}">Joker</button>
         </div>
       </div>
     `;
@@ -143,8 +192,8 @@
       <ha-card${this._renderHeader()}>
         <div style="padding:12px;">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-            <button data-action="new-round">Start New Round</button>
-            <button data-action="new-quiz">Start New Quiz</button>
+            <button data-action="new-round" style="${this._buttonStyle()}">New Round</button>
+            <button data-action="new-quiz" style="${this._buttonStyle(true)}">Start New Quiz</button>
           </div>
           <div style="font-size:${compact ? "12px" : "14px"};">
             ${players.map((player, index) => `${this._row(player, compact)}${index < players.length - 1 ? '<hr style="border:none;border-top:1px solid rgba(128,128,128,0.25);margin:0;">' : ""}`).join("") || '<div>No players</div>'}
@@ -181,6 +230,12 @@
             points,
           });
           return;
+        }
+
+        if (action === "joker") {
+          await this._call("use_joker", {
+            entity_id: entityId,
+          });
         }
 
       };

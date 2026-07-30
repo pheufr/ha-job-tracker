@@ -3,6 +3,7 @@
     super();
     this._resolvedMediaUrls = new Map();
     this._pendingResolutions = new Set();
+    this._mediaCacheTtlMs = 60 * 60 * 1000;
   }
 
   set hass(hass) {
@@ -54,12 +55,28 @@
       return trimmed;
     }
 
-    if (this._resolvedMediaUrls.has(trimmed)) {
-      return this._resolvedMediaUrls.get(trimmed) || "";
+    const cached = this._resolvedMediaUrls.get(trimmed);
+    if (cached && Date.now() - cached.resolvedAt < this._mediaCacheTtlMs) {
+      return cached.url || "";
     }
 
     this._resolveMediaSource(trimmed);
-    return "";
+    return cached?.url || "";
+  }
+
+  _normalizeResolvedUrl(url) {
+    if (typeof url !== "string" || !url) {
+      return "";
+    }
+    try {
+      const resolved = new URL(url, window.location.origin);
+      if (resolved.origin === window.location.origin) {
+        return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+      }
+    } catch (_err) {
+      return url;
+    }
+    return url;
   }
 
   _resolveMediaSource(mediaContentId) {
@@ -77,11 +94,17 @@
         media_content_id: mediaContentId,
       })
       .then((result) => {
-        const url = typeof result?.url === "string" ? result.url : "";
-        this._resolvedMediaUrls.set(mediaContentId, url);
+        const url = this._normalizeResolvedUrl(typeof result?.url === "string" ? result.url : "");
+        this._resolvedMediaUrls.set(mediaContentId, {
+          url,
+          resolvedAt: Date.now(),
+        });
       })
       .catch(() => {
-        this._resolvedMediaUrls.set(mediaContentId, "");
+        this._resolvedMediaUrls.set(mediaContentId, {
+          url: "",
+          resolvedAt: Date.now(),
+        });
       })
       .finally(() => {
         this._pendingResolutions.delete(mediaContentId);
@@ -122,8 +145,8 @@
       jobs.push({
         entityId,
         image,
-        icon: attributes.icon || state.attributes.icon || "mdi:clipboard-text-clock",
-        colour: attributes.colour || "",
+        icon: attributes.job_icon || attributes.icon || state.attributes.icon || "mdi:clipboard-text-clock",
+        colour: attributes.job_colour || attributes.colour || "",
         isDue,
         priority,
         name: attributes.friendly_name || entityId,
@@ -142,7 +165,7 @@
 
   _renderJobTile(job, showImages) {
     const orientation = this._orientation();
-    const tileDirection = orientation === "horizontal" ? "row" : "column";
+    const tileDirection = showImages ? (orientation === "horizontal" ? "row" : "column") : "row";
     const tileWidth = orientation === "horizontal" ? "min-width:260px;" : "width:100%;";
     const isHorizontal = orientation === "horizontal";
     const imgSize = isHorizontal ? "96px" : "100%";
@@ -173,9 +196,9 @@
 
     const baseStyle = job.isDue ? "" : "opacity:0.55;";
     return `
-      <button style="cursor:pointer;border:0;border-radius:12px;padding:12px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.22);font:inherit;text-align:left;display:flex;gap:12px;align-items:center;flex-direction:${tileDirection};${tileWidth}${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" data-job-name="${job.name}" title="${job.name}">
+      <button style="cursor:pointer;border:0;border-radius:14px;padding:12px;background:var(--card-background-color, #fff);box-shadow:inset 0 0 0 1px rgba(128,128,128,0.22);font:inherit;text-align:left;display:flex;gap:12px;align-items:center;justify-content:flex-start;flex-direction:${tileDirection};${tileWidth}${baseStyle}" class="job-image-container" data-entity-id="${job.entityId}" data-job-name="${job.name}" title="${job.name}">
         <ha-icon icon="${fallbackIcon}" style="${iconStyle}"></ha-icon>
-        <div style="min-width:0;">
+        <div style="min-width:0;display:grid;gap:4px;">
           <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${job.name}</div>
           <div style="font-size:12px;opacity:0.72;">${this._formatTriggered(job.lastTriggered)}</div>
         </div>

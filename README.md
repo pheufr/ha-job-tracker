@@ -55,6 +55,8 @@ Each job supports:
 - `cron_expression`
 - `days_interval`
 - `image` (supports media picker/upload in flows and services)
+- `icon`
+- `colour`
 - `priority`
 
 ### Services
@@ -223,6 +225,8 @@ Service domain: `raven_house_tools`
 - `reset_player_score`
 - `add_points`
 - `remove_points`
+- `use_joker`
+- `set_quiz_rounds`
 - `start_new_round`
 - `start_new_quiz`
 - `reset_quiz`
@@ -283,6 +287,13 @@ type: custom:rh-quiz-master-card
 point_buttons: [5, 10]
 compact: false
 show_photos: true
+```
+
+Round manager:
+
+```yaml
+type: custom:rh-quiz-round-card
+title: Quiz Rounds
 ```
 
 ## Raven House Soundboard

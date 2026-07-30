@@ -23,6 +23,8 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util.dt import utcnow
 
 from .quiz_const import (
+    ATTR_ACTIVE_ROUND_INDEX,
+    ATTR_ACTIVE_ROUND_NAME,
     ATTR_CREATED,
     ATTR_LAST_ROUND_SCORE,
     ATTR_PLAYER_ALIAS,
@@ -31,7 +33,9 @@ from .quiz_const import (
     ATTR_PLAYER_METRIC,
     ATTR_PLAYER_NAME,
     ATTR_PLAYER_PHOTO,
+    ATTR_QUIZ_ROUNDS,
     ATTR_ROUND_SCORE,
+    ATTR_TOTAL_ROUNDS,
     ATTR_TOTAL_SCORE,
     DOMAIN,
     PREFIX_QUIZ,
@@ -45,11 +49,13 @@ from .quiz_const import (
     SERVICE_RENAME_PLAYER,
     SERVICE_RESET_QUIZ,
     SERVICE_RESET_PLAYER_SCORE,
+    SERVICE_SET_QUIZ_ROUNDS,
     SERVICE_START_NEW_QUIZ,
     SERVICE_START_NEW_ROUND,
     STORAGE_VERSION,
     SERVICE_UPDATE_PLAYER_ALIAS,
     SERVICE_UPDATE_PLAYER_PHOTO,
+    SERVICE_USE_JOKER,
 )
 from .features import entry_id_supports_quiz
 
@@ -116,24 +122,71 @@ def _normalize_players(players_data: dict[str, Any] | None) -> dict[str, dict[st
     return players
 
 
+def _normalize_rounds(quiz_data: dict[str, Any] | None) -> list[str]:
+    rounds: list[str] = []
+    raw_rounds = (quiz_data or {}).get("rounds", [])
+    if not isinstance(raw_rounds, list):
+        return rounds
+    for item in raw_rounds:
+        if not isinstance(item, str):
+            continue
+        name = item.strip()
+        if name:
+            rounds.append(name)
+    return rounds
+
+
+def _normalize_active_round_index(quiz_data: dict[str, Any] | None, rounds: list[str]) -> int | None:
+    raw_index = (quiz_data or {}).get("active_round_index")
+    if raw_index is None or raw_index == "":
+        return None
+    try:
+        index = int(raw_index)
+    except (TypeError, ValueError):
+        return None
+    if 0 <= index < len(rounds):
+        return index
+    return None
+
+
+def _active_round_name(rounds: list[str], active_round_index: int | None) -> str | None:
+    if active_round_index is None:
+        return None
+    if 0 <= active_round_index < len(rounds):
+        return rounds[active_round_index]
+    return None
+
+
 async def _ensure_runtime(hass: HomeAssistant, entry_id: str) -> dict[str, Any]:
     data = _entry_data(hass, entry_id)
     if "quiz_store" not in data:
         data["quiz_store"] = Store(hass, STORAGE_VERSION, _quiz_storage_key(entry_id))
     if "quiz_players" not in data:
-        players_data = await data["quiz_store"].async_load() or {"players": []}
-        data["quiz_players"] = _normalize_players(players_data)
+        quiz_data = await data["quiz_store"].async_load() or {"players": []}
+        data["quiz_players"] = _normalize_players(quiz_data)
+        rounds = _normalize_rounds(quiz_data)
+        data["quiz_rounds"] = rounds
+        data["quiz_active_round_index"] = _normalize_active_round_index(quiz_data, rounds)
+    data.setdefault("quiz_rounds", [])
+    data.setdefault("quiz_active_round_index", None)
     data.setdefault("quiz_sensor_entities", {})
     data.setdefault("quiz_binary_entities", {})
     data.setdefault("quiz_switch_entities", {})
     data.setdefault("quiz_text_entities", {})
     data.setdefault("quiz_button_entities", {})
+    data.setdefault("quiz_round_entity", None)
     return data
 
 
 async def _save_players(hass: HomeAssistant, entry_id: str) -> None:
     data = await _ensure_runtime(hass, entry_id)
-    await data["quiz_store"].async_save({"players": list(data["quiz_players"].values())})
+    await data["quiz_store"].async_save(
+        {
+            "players": list(data["quiz_players"].values()),
+            "rounds": list(data.get("quiz_rounds", [])),
+            "active_round_index": data.get("quiz_active_round_index"),
+        }
+    )
 
 
 async def async_setup_sensors(
@@ -148,10 +201,14 @@ async def async_setup_sensors(
     entities: list[SensorEntity] = []
     for player_id in sorted(data["quiz_players"]):
         entities.extend(_build_player_sensor_entities(hass, config_entry.entry_id, player_id))
+    entities.append(QuizRoundsSensor(hass, config_entry.entry_id))
 
     if entities:
         async_add_entities(entities)
         _store_sensor_entities(data, entities)
+        for entity in entities:
+            if isinstance(entity, QuizRoundsSensor):
+                data["quiz_round_entity"] = entity
 
 
 async def async_setup_binary_sensors(
@@ -244,6 +301,8 @@ def _build_player_sensor_entities(
 def _store_sensor_entities(data: dict[str, Any], entities: list[SensorEntity]) -> None:
     by_player = data.setdefault("quiz_sensor_entities", {})
     for entity in entities:
+        if isinstance(entity, QuizRoundsSensor):
+            continue
         by_player.setdefault(entity.player_id, []).append(entity)
 
 
@@ -307,6 +366,9 @@ def _find_player_by_target(
 async def async_setup_quiz_services(hass: HomeAssistant) -> None:
     """Register Raven House Quiz services."""
 
+    async def _broadcast_rounds(entry_id: str) -> None:
+        async_dispatcher_send(hass, f"{QUIZ_SIGNAL_UPDATE}_{entry_id}_rounds")
+
     async def _broadcast(entry_id: str, player_id: str | None = None) -> None:
         if player_id is not None:
             async_dispatcher_send(hass, f"{QUIZ_SIGNAL_UPDATE}_{entry_id}_{player_id}")
@@ -314,6 +376,36 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
         data = await _ensure_runtime(hass, entry_id)
         for existing_player_id in data.get("quiz_players", {}):
             async_dispatcher_send(hass, f"{QUIZ_SIGNAL_UPDATE}_{entry_id}_{existing_player_id}")
+        await _broadcast_rounds(entry_id)
+
+    def _normalize_round_inputs(raw_rounds: Any) -> list[str]:
+        if not isinstance(raw_rounds, list):
+            return []
+        rounds: list[str] = []
+        for item in raw_rounds:
+            if not isinstance(item, str):
+                continue
+            name = item.strip()
+            if name:
+                rounds.append(name)
+        return rounds
+
+    def _coerce_active_round_index(raw_index: Any, round_count: int) -> int | None:
+        if raw_index is None or raw_index == "":
+            return None
+        try:
+            index = int(raw_index)
+        except (TypeError, ValueError):
+            return None
+        return index if 0 <= index < round_count else None
+
+    def _next_active_round_index(current_index: int | None, round_count: int) -> int | None:
+        if round_count <= 0:
+            return None
+        if current_index is None:
+            return 0
+        next_index = current_index + 1
+        return next_index if next_index < round_count else None
 
     async def _add_player(call: ServiceCall) -> None:
         player = {
@@ -467,6 +559,29 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
     async def _remove_points(call: ServiceCall) -> None:
         await _change_points(call, -1)
 
+    async def _use_joker(call: ServiceCall) -> None:
+        result = _find_player_by_target(hass, call.data.get("entity_id"), call.data.get("player_id"))
+        if result is None:
+            return
+        entry_id, _, player = result
+        player[ATTR_ROUND_SCORE] = int(player.get(ATTR_ROUND_SCORE, 0)) * 2
+        await _save_players(hass, entry_id)
+        await _broadcast(entry_id, player["id"])
+
+    async def _set_quiz_rounds(call: ServiceCall) -> None:
+        rounds = _normalize_round_inputs(call.data.get("rounds"))
+        raw_active_index = call.data.get("active_round_index")
+        for entry_id in hass.data.get(DOMAIN, {}):
+            if not entry_id_supports_quiz(hass, entry_id):
+                continue
+            data = await _ensure_runtime(hass, entry_id)
+            active_round_index = _coerce_active_round_index(raw_active_index, len(rounds))
+            data["quiz_rounds"] = rounds
+            data["quiz_active_round_index"] = active_round_index
+            await _save_players(hass, entry_id)
+            await _broadcast_rounds(entry_id)
+            return
+
     async def _start_new_round(call: ServiceCall) -> None:
         del call
         for entry_id in hass.data.get(DOMAIN, {}):
@@ -480,6 +595,10 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
                 player[ATTR_LAST_ROUND_SCORE] = round_score
                 player[ATTR_TOTAL_SCORE] = int(player.get(ATTR_TOTAL_SCORE, 0)) + round_score
                 player[ATTR_ROUND_SCORE] = 0
+            data["quiz_active_round_index"] = _next_active_round_index(
+                data.get("quiz_active_round_index"),
+                len(data.get("quiz_rounds", [])),
+            )
             await _save_players(hass, entry_id)
             await _broadcast(entry_id)
 
@@ -493,6 +612,7 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
                 player[ATTR_TOTAL_SCORE] = 0
                 player[ATTR_ROUND_SCORE] = 0
                 player[ATTR_LAST_ROUND_SCORE] = 0
+            data["quiz_active_round_index"] = 0 if data.get("quiz_rounds") else None
             await _save_players(hass, entry_id)
             await _broadcast(entry_id)
 
@@ -507,6 +627,7 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
                 player[ATTR_ROUND_SCORE] = 0
                 player[ATTR_LAST_ROUND_SCORE] = 0
                 player[ATTR_PLAYER_ENABLED] = False
+            data["quiz_active_round_index"] = None
             await _save_players(hass, entry_id)
             await _broadcast(entry_id)
 
@@ -521,6 +642,12 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
             vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
             vol.Optional("player_id"): cv.string,
             vol.Required("points"): vol.Coerce(int),
+        }
+    )
+    set_rounds_schema = vol.Schema(
+        {
+            vol.Required("rounds"): [cv.string],
+            vol.Optional("active_round_index"): vol.Any(None, vol.Coerce(int)),
         }
     )
     rename_schema = vol.Schema(
@@ -632,6 +759,22 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
             schema=points_schema,
         )
 
+    if not hass.services.has_service(DOMAIN, SERVICE_USE_JOKER):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_USE_JOKER,
+            _use_joker,
+            schema=target_schema,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_SET_QUIZ_ROUNDS):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SET_QUIZ_ROUNDS,
+            _set_quiz_rounds,
+            schema=set_rounds_schema,
+        )
+
     if not hass.services.has_service(DOMAIN, SERVICE_START_NEW_ROUND):
         hass.services.async_register(DOMAIN, SERVICE_START_NEW_ROUND, _start_new_round)
 
@@ -645,8 +788,10 @@ async def async_setup_quiz_services(hass: HomeAssistant) -> None:
 async def async_sync_players_from_storage(hass: HomeAssistant, entry_id: str) -> None:
     """Synchronize runtime entities with stored players."""
     data = await _ensure_runtime(hass, entry_id)
-    players_data = await data["quiz_store"].async_load() or {"players": []}
-    new_players = _normalize_players(players_data)
+    quiz_data = await data["quiz_store"].async_load() or {"players": []}
+    new_players = _normalize_players(quiz_data)
+    data["quiz_rounds"] = _normalize_rounds(quiz_data)
+    data["quiz_active_round_index"] = _normalize_active_round_index(quiz_data, data["quiz_rounds"])
 
     existing_ids = set(data["quiz_players"])
     new_ids = set(new_players)
@@ -719,6 +864,8 @@ async def async_sync_players_from_storage(hass: HomeAssistant, entry_id: str) ->
         for entity in button_entities:
             data["quiz_button_entities"][entity.player_id] = entity
 
+    async_dispatcher_send(hass, f"{QUIZ_SIGNAL_UPDATE}_{entry_id}_rounds")
+
 
 class QuizEntityBase:
     """Shared helpers for quiz entities."""
@@ -781,6 +928,55 @@ class QuizSensorBase(QuizEntityBase, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(await self._subscribe_updates())
+
+
+class QuizRoundsSensor(SensorEntity):
+    """Quiz rounds status entity."""
+
+    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
+        self.hass = hass
+        self.entry_id = entry_id
+        self._attr_unique_id = f"{DOMAIN}_{entry_id}_rounds"
+        self.entity_id = "sensor.rh_quiz_rounds"
+        self._attr_name = "Quiz Rounds"
+
+    @property
+    def available(self) -> bool:
+        return self.entry_id in self.hass.data.get(DOMAIN, {})
+
+    async def async_added_to_hass(self) -> None:
+        @callback
+        def _handle_update() -> None:
+            self.async_write_ha_state()
+
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                f"{QUIZ_SIGNAL_UPDATE}_{self.entry_id}_rounds",
+                _handle_update,
+            )
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        data = _entry_data(self.hass, self.entry_id)
+        return _active_round_name(
+            data.get("quiz_rounds", []),
+            data.get("quiz_active_round_index"),
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        data = _entry_data(self.hass, self.entry_id)
+        rounds = list(data.get("quiz_rounds", []))
+        active_round_index = data.get("quiz_active_round_index")
+        return {
+            ATTR_PLAYER_METRIC: "rounds",
+            ATTR_QUIZ_ROUNDS: rounds,
+            ATTR_ACTIVE_ROUND_INDEX: active_round_index,
+            ATTR_ACTIVE_ROUND_NAME: _active_round_name(rounds, active_round_index),
+            ATTR_TOTAL_ROUNDS: len(rounds),
+        }
 
 
 class QuizPlayerEnabledBinarySensor(QuizEntityBase, BinarySensorEntity):
