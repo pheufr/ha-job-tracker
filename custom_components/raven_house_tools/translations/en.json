@@ -358,6 +358,34 @@
         }
       }
     },
+    "use_joker": {
+      "name": "Use Joker",
+      "description": "Double a player's current round score",
+      "fields": {
+        "entity_id": {
+          "name": "Entity ID",
+          "description": "Any player entity ID"
+        },
+        "player_id": {
+          "name": "Player ID",
+          "description": "Player ID as an alternative to entity_id"
+        }
+      }
+    },
+    "set_quiz_rounds": {
+      "name": "Set Quiz Rounds",
+      "description": "Replace the quiz round list and optionally set the active round",
+      "fields": {
+        "rounds": {
+          "name": "Rounds",
+          "description": "Ordered list of quiz round names"
+        },
+        "active_round_index": {
+          "name": "Active Round Index",
+          "description": "Zero-based active round index, or omit to clear the active round"
+        }
+      }
+    },
     "start_new_round": {
       "name": "Start New Round",
       "description": "Move current round scores into totals and reset the current round"

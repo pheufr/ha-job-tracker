@@ -25,7 +25,7 @@ from .const import (
     TRIGGER_TYPE_MANUAL,
     TRIGGER_TYPE_SCHEDULE,
 )
-from .entities import _jobs_storage_key, async_sync_jobs_from_storage
+from .entities import _jobs_storage_key, _normalize_colour_value, async_sync_jobs_from_storage
 from .features import get_entry_feature
 from .quiz_entities import _quiz_storage_key, async_sync_players_from_storage
 
@@ -152,6 +152,8 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                         "cron_expression": user_input.get("cron_expression"),
                         "days_interval": user_input.get("days_interval"),
                         "image": _normalize_media_value(user_input.get("image", "")),
+                        "icon": str(user_input.get("icon", "")).strip(),
+                        "colour": _normalize_colour_value(user_input.get("colour", "")),
                         "priority": user_input.get("priority", 0),
                         "created": datetime.isoformat(utcnow()),
                     }
@@ -179,6 +181,8 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional("image", default=""): selector.selector(
                         {"media": {"accept": ["image/*"]}}
                     ),
+                    vol.Optional("icon", default=""): selector.IconSelector(),
+                    vol.Optional("colour", default=""): selector.ColorRGBSelector(),
                     vol.Optional("priority", default=0): cv.positive_int,
                 }
             ),
@@ -264,6 +268,8 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                         "cron_expression": user_input.get("cron_expression"),
                         "days_interval": user_input.get("days_interval"),
                         "image": _normalize_media_value(user_input.get("image", "")),
+                        "icon": str(user_input.get("icon", "")).strip(),
+                        "colour": _normalize_colour_value(user_input.get("colour", "")),
                         "priority": user_input.get("priority", 0),
                     }
                 )
@@ -296,6 +302,8 @@ class RavenHouseJobsOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         "image", default=job.get("image", "")
                     ): selector.selector({"media": {"accept": ["image/*"]}}),
+                    vol.Optional("icon", default=job.get("icon", "")): selector.IconSelector(),
+                    vol.Optional("colour", default=job.get("colour", "")): selector.ColorRGBSelector(),
                     vol.Optional("priority", default=job.get("priority", 0)): cv.positive_int,
                     vol.Required("action", default="update"): vol.In(
                         {"update": "Save Changes", "delete": "Delete Job"}
