@@ -2,15 +2,19 @@
   "manifest_version": 2,
   "domain": "raven_house_tools",
   "name": "Raven House Tools",
-  "codeowners": ["@pheufr"],
+  "codeowners": [
+    "@pheufr"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/pheufr/ha-raven-house",
   "requirements": [
     "croniter==1.4.1"
   ],
-  "version": "2026.3.1",
+  "version": "",
   "issue_tracker": "https://github.com/pheufr/ha-raven-house/issues",
   "integration_type": "service",
   "iot_class": "local_polling",
-  "after_dependencies": ["frontend"]
+  "after_dependencies": [
+    "frontend"
+  ]
 }
