@@ -1,0 +1,163 @@
+name: Release (Auto Version + Tag + Notes)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "custom_components/**"
+      - "hacs.json"
+      - ".github/workflows/release.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Locate integration manifest
+        id: locate
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST=$(find custom_components -maxdepth 4 -type f -name manifest.json | head -n 1)
+          if [ -z "${MANIFEST:-}" ]; then
+            echo "No manifest.json found under custom_components/"
+            exit 1
+          fi
+          echo "manifest=$MANIFEST" > "$GITHUB_OUTPUT"
+
+      - name: Decide bump type from commit message
+        id: bump_type
+        shell: bash
+        run: |
+          set -euo pipefail
+          MSG="${{ github.event.head_commit.message }}"
+          TYPE="patch"
+          shopt -s nocasematch
+          if [[ "$MSG" == *"#major"* ]]; then
+            TYPE="major"
+          elif [[ "$MSG" == *"#minor"* ]]; then
+            TYPE="minor"
+          fi
+          shopt -u nocasematch
+          echo "type=$TYPE" > "$GITHUB_OUTPUT"
+
+      - name: Compute next version
+        id: semver
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST="${{ steps.locate.outputs.manifest }}"
+          TYPE="${{ steps.bump_type.outputs.type }}"
+
+          CURRENT=$(jq -r '.version // empty' "$MANIFEST")
+          if [ -z "$CURRENT" ]; then
+            CURRENT="0.0.0"
+          fi
+
+          if ! [[ "$CURRENT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Current version '$CURRENT' is not semver (x.y.z)."
+            exit 1
+          fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          case "$TYPE" in
+            major)
+              MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1)); PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+            *)
+              echo "Invalid bump type: $TYPE"
+              exit 1
+              ;;
+          esac
+
+          NEXT="${MAJOR}.${MINOR}.${PATCH}"
+          TAG="v${NEXT}"
+
+          echo "current=$CURRENT" > "$GITHUB_OUTPUT"
+          echo "next=$NEXT" > "$GITHUB_OUTPUT"
+          echo "tag=$TAG" > "$GITHUB_OUTPUT"
+
+      - name: Ensure tag does not already exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.semver.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists. Nothing to do."
+            exit 1
+          fi
+
+      - name: Update manifest.json version
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST="${{ steps.locate.outputs.manifest }}"
+          NEXT="${{ steps.semver.outputs.next }}"
+          tmp=$(mktemp)
+          jq --arg v "$NEXT" '.version = $v' "$MANIFEST" > "$tmp"
+          mv "$tmp" "$MANIFEST"
+
+      - name: Update hacs.json version (if present)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NEXT="${{ steps.semver.outputs.next }}"
+          if [ -f "hacs.json" ]; then
+            tmp=$(mktemp)
+            jq --arg v "$NEXT" '.version = $v' hacs.json > "$tmp"
+            mv "$tmp" hacs.json
+          fi
+
+      - name: Commit version bump
+        shell: bash
+        run: |
+          set -euo pipefail
+          NEXT="${{ steps.semver.outputs.next }}"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(release): v${NEXT} [skip ci]"
+          git push
+
+      - name: Create and push tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.semver.outputs.tag }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release (auto notes)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.semver.outputs.tag }}
+          name: ${{ steps.semver.outputs.tag }}
+          generate_release_notes: true
