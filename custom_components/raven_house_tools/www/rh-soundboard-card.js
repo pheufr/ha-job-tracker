@@ -4,8 +4,8 @@ class RHSoundboardCard extends HTMLElement {
     this._connected = false;
     this._busy = false;
     this._selectedTarget = "";
-    this._playMode = "connected";
     this._sessionState = null;
+    this._lastRenderKey = "";
   }
 
   setConfig(config) {
@@ -17,9 +17,6 @@ class RHSoundboardCard extends HTMLElement {
         : [],
     };
     this._columns = Number(this._config.columns || 4);
-
-    const configuredMode = String(this._config.default_mode || "connected").toLowerCase();
-    this._playMode = configuredMode === "direct" ? "direct" : "connected";
   }
 
   set hass(hass) {
@@ -28,13 +25,14 @@ class RHSoundboardCard extends HTMLElement {
     if (!this._selectedTarget) {
       this._selectedTarget = this._config.target || "";
     }
-    this._render();
+    this._requestRender();
   }
 
   _syncSessionState() {
     const state = this._hass?.states?.["sensor.rh_soundboard_session"];
     if (!state) {
       this._sessionState = null;
+      this._connected = false;
       return;
     }
 
@@ -44,12 +42,6 @@ class RHSoundboardCard extends HTMLElement {
     const activeTarget = attrs.active_target || "";
     if (!this._selectedTarget && activeTarget) {
       this._selectedTarget = activeTarget;
-    }
-
-    const modeByTarget = attrs.mode_by_target || {};
-    const stateMode = modeByTarget[this._selectedTarget] || modeByTarget[activeTarget] || "";
-    if (stateMode === "connected" || stateMode === "direct") {
-      this._playMode = stateMode;
     }
 
     const selected = this._selectedTarget || activeTarget;
@@ -141,9 +133,7 @@ class RHSoundboardCard extends HTMLElement {
         return `Queued: ${pending} request(s)`;
       }
     }
-    return this._connected
-      ? `Connected to ${this._selectedTarget}`
-      : `Ready (${this._playMode}): ${this._selectedTarget}`;
+    return this._connected ? `Connected to ${this._selectedTarget}` : `Ready: ${this._selectedTarget}`;
   }
 
   _clipStatusText(clip) {
@@ -161,6 +151,38 @@ class RHSoundboardCard extends HTMLElement {
     return this._connected || this._busy;
   }
 
+  _buildRenderKey() {
+    const players = this._mediaPlayers()
+      .map((player) => `${player.entityId}:${player.available ? 1 : 0}:${player.name}`)
+      .join("|");
+    const selectedState = this._selectedTarget ? this._hass?.states?.[this._selectedTarget] : null;
+    const volumeLevel = Number(selectedState?.attributes?.volume_level);
+    const volumeKey = Number.isFinite(volumeLevel) ? volumeLevel.toFixed(3) : "na";
+    const session = this._sessionState || {};
+    return [
+      this._selectedTarget,
+      this._connected ? "1" : "0",
+      this._busy ? "1" : "0",
+      String(session.active_target || ""),
+      String(session.pending_requests || 0),
+      String(session.last_clip || ""),
+      volumeKey,
+      players,
+    ].join("~");
+  }
+
+  _requestRender(force = false) {
+    if (!this._hass) {
+      return;
+    }
+    const nextKey = this._buildRenderKey();
+    if (!force && nextKey === this._lastRenderKey) {
+      return;
+    }
+    this._lastRenderKey = nextKey;
+    this._render();
+  }
+
   async _toggleConnection() {
     if (this._busy) {
       return;
@@ -171,19 +193,13 @@ class RHSoundboardCard extends HTMLElement {
     }
 
     this._busy = true;
-    this._render();
+    this._requestRender(true);
 
     try {
       if (this._connected) {
         await this._call("soundboard_disconnect", { entity_id: target });
         this._connected = false;
       } else {
-        if (this._hasService("raven_house_tools", "soundboard_set_mode")) {
-          await this._call("soundboard_set_mode", {
-            entity_id: target,
-            mode: this._playMode,
-          });
-        }
         await this._call("soundboard_connect", {
           entity_id: target,
           dead_air_media: this._config.dead_air_media || "",
@@ -192,7 +208,7 @@ class RHSoundboardCard extends HTMLElement {
       }
     } finally {
       this._busy = false;
-      this._render();
+      this._requestRender(true);
     }
   }
 
@@ -208,33 +224,36 @@ class RHSoundboardCard extends HTMLElement {
     const payload = {
       entity_id: target,
       media: clip.media,
-      connected: this._playMode === "connected",
+      connected: false,
       dead_air_media: this._config.dead_air_media || "",
     };
 
     if (this._serviceHasField("raven_house_tools", "soundboard_play_clip", "mode")) {
-      payload.mode = this._playMode;
+      payload.mode = "direct";
     }
 
     await this._call("soundboard_play_clip", payload);
   }
 
-  _renderModeSelector() {
-    if (this._config.show_mode_selector === false) {
-      return "";
+  _selectedTargetVolumePercent() {
+    const state = this._selectedTarget ? this._hass?.states?.[this._selectedTarget] : null;
+    const level = Number(state?.attributes?.volume_level);
+    if (!Number.isFinite(level)) {
+      return 50;
     }
+    return Math.max(0, Math.min(100, Math.round(level * 100)));
+  }
 
-    const disabledAttr = this._optionInputsDisabled() ? "disabled" : "";
-
-    return `
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <label for="rh-soundboard-mode" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;">Mode</label>
-        <select id="rh-soundboard-mode" ${disabledAttr} style="padding:8px 10px;border-radius:8px;min-width:180px;">
-          <option value="connected" ${this._playMode === "connected" ? "selected" : ""}>Connected session</option>
-          <option value="direct" ${this._playMode === "direct" ? "selected" : ""}>Direct play</option>
-        </select>
-      </div>
-    `;
+  async _setVolume(percent) {
+    const target = this._selectedTarget || this._config.target || "";
+    if (!target) {
+      return;
+    }
+    const level = Math.max(0, Math.min(1, Number(percent) / 100));
+    await this._hass.callService("media_player", "volume_set", {
+      entity_id: target,
+      volume_level: level,
+    });
   }
 
   _renderTargetSelector(players) {
@@ -253,8 +272,7 @@ class RHSoundboardCard extends HTMLElement {
       .join("");
 
     return `
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <label for="rh-soundboard-target" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;">Target</label>
+      <div style="display:flex;gap:10px;align-items:center;min-width:0;flex:1;">
         <select id="rh-soundboard-target" ${disabledAttr} style="flex:1;min-width:220px;padding:8px 10px;border-radius:8px;">
           <option value="">Select media player</option>
           ${options}
@@ -272,21 +290,24 @@ class RHSoundboardCard extends HTMLElement {
     const clips = this._clips();
     const columns = Math.max(1, this._columns);
     const buttonLabel = this._connected ? "Disconnect" : "Connect";
-    const optionsLocked = this._optionInputsDisabled();
+    const volumeDisabled = this._busy || !this._selectedTarget;
+    const volumePercent = this._selectedTargetVolumePercent();
 
     this.innerHTML = `
       <ha-card${this._renderHeader()}>
         <div style="padding:16px;display:grid;gap:14px;">
           <div style="display:grid;gap:10px;padding:12px;border-radius:12px;border:1px solid rgba(128,128,128,0.24);background:rgba(128,128,128,0.06);">
-            ${this._renderTargetSelector(players)}
-            ${this._renderModeSelector()}
-            <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              ${this._renderTargetSelector(players)}
               <button id="rh-soundboard-connect" style="padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;">
                 ${buttonLabel}
               </button>
-              <div style="font-size:12px;opacity:0.72;">${optionsLocked ? "Options locked while connected" : "Options unlocked"}</div>
             </div>
-            <div style="font-size:12px;opacity:0.86;line-height:1.3;">Status: ${this._statusText()}</div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <label for="rh-soundboard-volume" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.7;">Volume</label>
+              <input id="rh-soundboard-volume" type="range" min="0" max="100" step="1" value="${volumePercent}" ${volumeDisabled ? "disabled" : ""} style="flex:1;min-width:160px;" />
+              <span id="rh-soundboard-volume-value" style="font-size:12px;opacity:0.78;min-width:40px;text-align:right;">${volumePercent}%</span>
+            </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(${columns}, minmax(0, 1fr));gap:10px;">
             ${
@@ -349,29 +370,21 @@ class RHSoundboardCard extends HTMLElement {
         this._selectedTarget = event.currentTarget.value || "";
         if (this._selectedTarget) {
           await this._call("soundboard_set_target", { entity_id: this._selectedTarget });
-          if (this._hasService("raven_house_tools", "soundboard_set_mode")) {
-            await this._call("soundboard_set_mode", {
-              entity_id: this._selectedTarget,
-              mode: this._playMode,
-            });
-          }
         }
-        this._render();
+        this._requestRender(true);
       };
     }
 
-    const modeSelect = this.querySelector("#rh-soundboard-mode");
-    if (modeSelect) {
-      modeSelect.onchange = async (event) => {
-        const nextMode = String(event.currentTarget.value || "connected").toLowerCase();
-        this._playMode = nextMode === "direct" ? "direct" : "connected";
-        if (this._selectedTarget && this._hasService("raven_house_tools", "soundboard_set_mode")) {
-          await this._call("soundboard_set_mode", {
-            entity_id: this._selectedTarget,
-            mode: this._playMode,
-          });
+    const volumeInput = this.querySelector("#rh-soundboard-volume");
+    const volumeValue = this.querySelector("#rh-soundboard-volume-value");
+    if (volumeInput) {
+      volumeInput.oninput = (event) => {
+        if (volumeValue) {
+          volumeValue.textContent = `${event.currentTarget.value}%`;
         }
-        this._render();
+      };
+      volumeInput.onchange = async (event) => {
+        await this._setVolume(event.currentTarget.value);
       };
     }
 
