@@ -4,14 +4,31 @@ class RHQuizCard extends HTMLElement {
     this._resolvedMediaUrls = new Map();
     this._pendingResolutions = new Set();
     this._mediaCacheTtlMs = 60 * 60 * 1000;
+    this._lastRenderKey = "";
   }
 
   setConfig(config) {
     this._config = config || {};
   }
 
+  _buildRenderKey() {
+    if (!this._hass) return "";
+    const players = this._players();
+    const roundState = this._hass.states["sensor.rh_quiz_rounds"] || null;
+    const roundKey = roundState
+      ? `${roundState.state}:${roundState.attributes?.active_round_index ?? ""}:${roundState.attributes?.active_round_name ?? ""}`
+      : "";
+    return [
+      roundKey,
+      players.map((p) => `${p.entityId}:${p.total}:${p.round}:${p.enabled ? 1 : 0}:${p.photo}`).join("|"),
+    ].join("~");
+  }
+
   set hass(hass) {
     this._hass = hass;
+    const key = this._buildRenderKey();
+    if (key === this._lastRenderKey) return;
+    this._lastRenderKey = key;
     this._render();
   }
 

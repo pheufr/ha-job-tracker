@@ -209,11 +209,9 @@
   renderJobs(jobs, showImages) {
     if (jobs.length === 0) {
       return `
-        <ha-card${this._renderHeader()}>
-          <div style="display:flex;align-items:center;justify-content:center;min-height:160px;color:#666;padding:16px;">
-            No due jobs
-          </div>
-        </ha-card>
+        <div style="display:flex;align-items:center;justify-content:center;min-height:160px;color:#666;padding:16px;">
+          No due jobs
+        </div>
       `;
     }
 
@@ -222,15 +220,13 @@
     const orientation = this._orientation();
     const listStyle =
       orientation === "horizontal"
-        ? "display:flex;flex-wrap:wrap;gap:12px;padding:16px;align-items:flex-start;"
-        : "display:flex;flex-direction:column;gap:12px;padding:16px;";
+        ? "display:flex;flex-wrap:wrap;gap:12px;padding:4px 0;align-items:flex-start;"
+        : "display:flex;flex-direction:column;gap:12px;padding:4px 0;";
 
     return `
-      <ha-card${this._renderHeader()}>
-        <div style="${listStyle}">
-          ${jobsHtml}
-        </div>
-      </ha-card>
+      <div style="${listStyle}">
+        ${jobsHtml}
+      </div>
     `;
   }
 
