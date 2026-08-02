@@ -68,14 +68,12 @@ class RHQuizCard extends HTMLElement {
       return "";
     }
     try {
-      const resolved = new URL(url, window.location.origin);
-      if (resolved.origin === window.location.origin) {
-        return `${resolved.pathname}${resolved.search}${resolved.hash}`;
-      }
+      // Always return a fully-qualified absolute URL so that images load
+      // correctly regardless of the page origin (e.g. HA Cast receiver).
+      return new URL(url, window.location.origin).href;
     } catch (_err) {
       return url;
     }
-    return url;
   }
 
   _resolveMediaSource(mediaContentId) {
@@ -206,7 +204,7 @@ class RHQuizCard extends HTMLElement {
     return `
       <section>
         <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:8px;">Current Leader</div>
-        <div style="position:relative;min-height:200px;border-radius:14px;overflow:hidden;background:${winnerImage ? "center / cover no-repeat url('" + winnerImage + "')" : "var(--primary-color)"};">
+        <div style="position:relative;min-height:200px;border-radius:14px;overflow:hidden;background:${winnerImage ? "center / cover no-repeat url('" + encodeURI(winnerImage).replace(/'/g, "%27") + "')" : "var(--primary-color)"};">
           <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.78), rgba(0,0,0,0.2));"></div>
           <div style="position:absolute;left:16px;right:16px;bottom:16px;color:#fff;display:flex;align-items:flex-end;gap:14px;">
             ${!winnerImage ? this._photo(winner.photo, winner.alias, heroSize, "14px") : ""}

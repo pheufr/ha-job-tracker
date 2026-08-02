@@ -10,6 +10,7 @@ import time
 from typing import Any
 
 import voluptuous as vol
+from homeassistant.components.media_source import async_resolve_media
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util.dt import utcnow
@@ -122,6 +123,24 @@ def _target_mode(session: SoundboardSession, entity_id: str) -> str:
     return mode
 
 
+async def _resolve_media_url(hass: HomeAssistant, media: str) -> str:
+    """Resolve a media-source:// URI to a playable URL.
+
+    Media players that do not natively support the media_source integration
+    (e.g. third-party integrations) will fail silently when given a raw
+    ``media-source://`` URI.  Resolving the URL on the backend ensures that
+    every integration receives a plain HTTP URL it can actually play.
+    """
+    if not media.startswith("media-source://"):
+        return media
+    try:
+        resolved = await async_resolve_media(hass, media, None)
+        return resolved.url
+    except Exception:  # noqa: BLE001
+        _LOGGER.debug("Could not resolve media-source URI %s, using as-is", media)
+        return media
+
+
 async def _play_media(
     hass: HomeAssistant,
     entity_id: str,
@@ -130,9 +149,10 @@ async def _play_media(
     enqueue: str | None = None,
 ) -> bool:
     """Play media on target entity."""
+    resolved_media = await _resolve_media_url(hass, media)
     payload: dict[str, Any] = {
         "entity_id": entity_id,
-        "media_content_id": media,
+        "media_content_id": resolved_media,
         "media_content_type": "music",
     }
     if enqueue:
@@ -147,7 +167,7 @@ async def _play_media(
         if enqueue and "enqueue_announce" in str(err):
             fallback_payload: dict[str, Any] = {
                 "entity_id": entity_id,
-                "media_content_id": media,
+                "media_content_id": resolved_media,
                 "media_content_type": "music",
                 "announce": False,
             }

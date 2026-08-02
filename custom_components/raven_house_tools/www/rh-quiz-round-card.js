@@ -1,11 +1,37 @@
 class RHQuizRoundCard extends HTMLElement {
+  constructor() {
+    super();
+    this._lastRenderKey = "";
+  }
+
   setConfig(config) {
     this._config = config || {};
   }
 
   set hass(hass) {
     this._hass = hass;
+    const key = this._buildRenderKey();
+    if (key === this._lastRenderKey) return;
+    this._lastRenderKey = key;
     this._render();
+  }
+
+  _buildRenderKey() {
+    const rounds = this._rounds();
+    const active = this._activeRoundIndex();
+    return `${active ?? "null"}|${rounds.join(",")}`;
+  }
+
+  connectedCallback() {
+    this._clickHandler = (e) => this._handleClick(e);
+    this._keydownHandler = (e) => this._handleKeydown(e);
+    this.addEventListener("click", this._clickHandler);
+    this.addEventListener("keydown", this._keydownHandler);
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener("click", this._clickHandler);
+    this.removeEventListener("keydown", this._keydownHandler);
   }
 
   _title() {
@@ -58,15 +84,6 @@ class RHQuizRoundCard extends HTMLElement {
     });
   }
 
-  async _handleAddRound() {
-    const input = this.querySelector('[data-role="round-input"]');
-    if (!input) return;
-    const name = input.value.trim();
-    if (!name) return;
-    const rounds = this._rounds();
-    await this._saveRounds([...rounds, name], this._activeRoundIndex());
-    input.value = "";
-  }
 
   async _handleAction(action, index) {
     const rounds = this._rounds();
@@ -135,28 +152,35 @@ class RHQuizRoundCard extends HTMLElement {
         </div>
       </ha-card>
     `;
+  }
 
+  async _handleAddRound() {
     const input = this.querySelector('[data-role="round-input"]');
-    if (input) {
-      input.addEventListener("keydown", async (event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          await this._handleAddRound();
-        }
-      });
-    }
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) return;
+    const rounds = this._rounds();
+    await this._saveRounds([...rounds, name], this._activeRoundIndex());
+    input.value = "";
+  }
 
-    this.querySelectorAll("button").forEach((button) => {
-      button.onclick = async (event) => {
-        const action = event.currentTarget.dataset.action;
-        if (action === "add") {
-          await this._handleAddRound();
-          return;
-        }
-        const index = Number(event.currentTarget.dataset.index);
-        await this._handleAction(action, index);
-      };
-    });
+  async _handleClick(e) {
+    const button = e.target.closest("button[data-action]");
+    if (!button) return;
+    const action = button.dataset.action;
+    if (action === "add") {
+      await this._handleAddRound();
+      return;
+    }
+    const index = Number(button.dataset.index);
+    await this._handleAction(action, index);
+  }
+
+  async _handleKeydown(e) {
+    if (e.target.dataset?.role === "round-input" && e.key === "Enter") {
+      e.preventDefault();
+      await this._handleAddRound();
+    }
   }
 
   getCardSize() {

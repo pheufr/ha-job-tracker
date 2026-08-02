@@ -371,9 +371,18 @@ class RHSoundboardCard extends HTMLElement {
   }
 
   connectedCallback() {
-    this.addEventListener("click", (e) => this._handleClick(e));
-    this.addEventListener("change", (e) => this._handleChange(e));
-    this.addEventListener("input", (e) => this._handleInput(e));
+    this._clickHandler = (e) => this._handleClick(e);
+    this._changeHandler = (e) => this._handleChange(e);
+    this._inputHandler = (e) => this._handleInput(e);
+    this.addEventListener("click", this._clickHandler);
+    this.addEventListener("change", this._changeHandler);
+    this.addEventListener("input", this._inputHandler);
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener("click", this._clickHandler);
+    this.removeEventListener("change", this._changeHandler);
+    this.removeEventListener("input", this._inputHandler);
   }
 
   _handleClick(e) {

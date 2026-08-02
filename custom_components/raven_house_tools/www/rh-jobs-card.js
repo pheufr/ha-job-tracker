@@ -4,10 +4,33 @@
     this._resolvedMediaUrls = new Map();
     this._pendingResolutions = new Set();
     this._mediaCacheTtlMs = 60 * 60 * 1000;
+    this._lastRenderKey = "";
+    this._pendingConfirmEntityId = null;
+    this._pendingConfirmJobName = "";
   }
 
   set hass(hass) {
     this._hass = hass;
+    this._requestUpdate();
+  }
+
+  _buildRenderKey() {
+    if (!this._hass || !this._config) return "";
+    const jobEntityIds = this._jobEntityIds();
+    const stateKey = jobEntityIds
+      .map((id) => {
+        const s = this._hass.states[id];
+        return s ? `${id}:${s.state}:${s.attributes?.last_triggered || ""}` : `${id}:missing`;
+      })
+      .join("|");
+    return `${stateKey}~confirm:${this._pendingConfirmEntityId || ""}`;
+  }
+
+  _requestUpdate() {
+    if (!this._hass || !this._config) return;
+    const key = this._buildRenderKey();
+    if (key === this._lastRenderKey) return;
+    this._lastRenderKey = key;
     this.updateCard();
   }
 
@@ -69,14 +92,12 @@
       return "";
     }
     try {
-      const resolved = new URL(url, window.location.origin);
-      if (resolved.origin === window.location.origin) {
-        return `${resolved.pathname}${resolved.search}${resolved.hash}`;
-      }
+      // Always return a fully-qualified absolute URL so that images load
+      // correctly regardless of the page origin (e.g. HA Cast receiver).
+      return new URL(url, window.location.origin).href;
     } catch (_err) {
       return url;
     }
-    return url;
   }
 
   _resolveMediaSource(mediaContentId) {
@@ -108,6 +129,8 @@
       })
       .finally(() => {
         this._pendingResolutions.delete(mediaContentId);
+        // Reset render key so the newly resolved image is picked up.
+        this._lastRenderKey = "";
         this.updateCard();
       });
   }
@@ -206,8 +229,19 @@
     `;
   }
 
+  _renderConfirmBanner() {
+    const name = this._pendingConfirmJobName || this._pendingConfirmEntityId;
+    return `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(var(--rgb-amber-color,255,165,0),0.15);margin-bottom:12px;">
+        <span style="flex:1;font-weight:600;font-size:13px;">Mark "${name}" as complete?</span>
+        <button data-action="confirm-job" style="appearance:none;border:0;border-radius:999px;background:var(--primary-color);color:var(--text-primary-color,#fff);padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;">Confirm</button>
+        <button data-action="cancel-job" style="appearance:none;border:0;border-radius:999px;background:var(--secondary-background-color);color:var(--primary-text-color);padding:8px 14px;font:inherit;font-weight:700;cursor:pointer;">Cancel</button>
+      </div>
+    `;
+  }
+
   renderJobs(jobs, showImages) {
-    if (jobs.length === 0) {
+    if (jobs.length === 0 && !this._pendingConfirmEntityId) {
       return `
         <div style="display:flex;align-items:center;justify-content:center;min-height:160px;color:#666;padding:16px;">
           No due jobs
@@ -224,6 +258,7 @@
         : "display:flex;flex-direction:column;gap:12px;padding:4px 0;";
 
     return `
+      ${this._pendingConfirmEntityId ? this._renderConfirmBanner() : ""}
       <div style="${listStyle}">
         ${jobsHtml}
       </div>
@@ -231,10 +266,39 @@
   }
 
   connectedCallback() {
-    this.addEventListener("click", (e) => this.handleImageClick(e));
+    this._clickHandler = (e) => this.handleImageClick(e);
+    this.addEventListener("click", this._clickHandler);
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener("click", this._clickHandler);
   }
 
   handleImageClick(e) {
+    // Handle confirm/cancel buttons for inline validation prompt.
+    const actionBtn = e.target.closest("button[data-action]");
+    if (actionBtn) {
+      const action = actionBtn.dataset.action;
+      if (action === "confirm-job") {
+        const entityId = this._pendingConfirmEntityId;
+        this._pendingConfirmEntityId = null;
+        this._pendingConfirmJobName = "";
+        if (entityId) {
+          this._hass.callService("raven_house_tools", "complete_job", { entity_id: entityId });
+        }
+        this._lastRenderKey = "";
+        this.updateCard();
+        return;
+      }
+      if (action === "cancel-job") {
+        this._pendingConfirmEntityId = null;
+        this._pendingConfirmJobName = "";
+        this._lastRenderKey = "";
+        this.updateCard();
+        return;
+      }
+    }
+
     const container = e.target.closest(".job-image-container");
     if (!container) return;
 
@@ -243,10 +307,11 @@
 
     const validationRequired = this._config.validation_required === true;
     if (validationRequired) {
-      const jobName = container.getAttribute("data-job-name") || entityId;
-      if (!window.confirm(`Mark "${jobName}" as complete?`)) {
-        return;
-      }
+      this._pendingConfirmEntityId = entityId;
+      this._pendingConfirmJobName = container.getAttribute("data-job-name") || entityId;
+      this._lastRenderKey = "";
+      this.updateCard();
+      return;
     }
 
     this._hass.callService("raven_house_tools", "complete_job", {
