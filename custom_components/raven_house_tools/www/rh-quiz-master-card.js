@@ -61,13 +61,14 @@
     return this._hass.callService("raven_house_tools", service, data);
   }
 
-  _renderPhoto(photo, name) {
+  _renderPhoto(photo, name, size = 24) {
     if (!this._config.show_photos) return "";
     const resolvedPhoto = this._displayImage(photo);
+    const fontSize = Math.max(9, Math.floor(size * 0.45));
     if (!resolvedPhoto) {
-      return `<div style="width:24px;height:24px;border-radius:50%;background:#999;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">${name.slice(0, 1).toUpperCase()}</div>`;
+      return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#999;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:${fontSize}px;flex-shrink:0;">${name.slice(0, 1).toUpperCase()}</div>`;
     }
-    return `<img src="${resolvedPhoto}" alt="${name}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'" />`;
+    return `<img src="${resolvedPhoto}" alt="${name}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'" />`;
   }
 
   _displayImage(image) {
@@ -140,11 +141,11 @@
       "border-radius:999px",
       `background:${primary ? "var(--primary-color)" : "var(--secondary-background-color)"}`,
       `color:${primary ? "var(--text-primary-color, #fff)" : "var(--primary-text-color)"}`,
-      `padding:${compact ? "7px 10px" : "10px 12px"}`,
+      `padding:${compact ? "5px 8px" : "10px 12px"}`,
       "font:inherit",
       "font-weight:700",
       "cursor:pointer",
-      `min-height:${compact ? "32px" : "40px"}`,
+      `min-height:${compact ? "30px" : "40px"}`,
       "flex:1 1 0",
       "box-sizing:border-box",
       "text-align:center",
@@ -156,28 +157,41 @@
       .map((points) => {
         const action = points > 0 ? "add" : "remove";
         const label = points > 0 ? `+${points}` : `${points}`;
-        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}" style="${this._buttonStyle(false, true)}">${label}</button>`;
+        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}" style="${this._buttonStyle(false, compact)}">${label}</button>`;
       })
       .join("");
 
+    // In compact mode, show total score inline with the player name to save vertical space.
+    const nameBlock = compact
+      ? `<div style="min-width:0;">
+           <div style="display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;">
+             <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.alias || "No alias"}</div>
+             <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0.75;">${player.name}</div>
+             <div style="opacity:0.65;font-size:10px;white-space:nowrap;">· Total: <strong>${player.total}</strong></div>
+           </div>
+         </div>`
+      : `<div style="min-width:0;">
+           <div style="display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;">
+             <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.alias || "No alias"}</div>
+             <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.name}</div>
+           </div>
+           <div style="font-size:12px;opacity:0.75;">Total Points: <strong>${player.total}</strong></div>
+         </div>`;
+
+    const photoSize = compact ? 18 : 24;
+
     return `
-      <div style="padding:9px 0;display:grid;gap:8px;${player.enabled ? "" : "opacity:0.45;"}">
+      <div style="padding:${compact ? "7px" : "9px"} 0;display:grid;gap:${compact ? "5px" : "8px"};${player.enabled ? "" : "opacity:0.45;"}">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;">
           <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
-            ${this._renderPhoto(player.photo, player.name)}
-            <div style="min-width:0;">
-              <div style="display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;">
-                <div style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.alias || "No alias"}</div>
-                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${player.name}</div>
-              </div>
-              <div style="font-size:${compact ? "11px" : "12px"};opacity:0.75;">Total Points: <strong>${player.total}</strong></div>
-            </div>
+            ${this._renderPhoto(player.photo, player.name, photoSize)}
+            ${nameBlock}
           </div>
-          <div style="font-size:${compact ? "20px" : "24px"};font-weight:800;line-height:1;">${player.round >= 0 ? "+" : ""}${player.round}</div>
+          <div style="font-size:${compact ? "18px" : "24px"};font-weight:800;line-height:1;">${player.round >= 0 ? "+" : ""}${player.round}</div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <div style="display:flex;gap:${compact ? "4px" : "6px"};flex-wrap:wrap;">
           ${actionButtons}
-          <button data-action="joker" data-entity="${player.entityId}" style="${this._buttonStyle(true, true)}">Joker</button>
+          <button data-action="joker" data-entity="${player.entityId}" style="${this._buttonStyle(true, compact)}">Joker</button>
         </div>
       </div>
     `;
