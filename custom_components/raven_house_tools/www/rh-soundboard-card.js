@@ -281,6 +281,53 @@ class RHSoundboardCard extends HTMLElement {
     `;
   }
 
+  _renderClip(clip, showText, showIcon) {
+    const iconOnly = showIcon && !showText;
+
+    const styleParts = [
+      "min-height:96px",
+      "border:none",
+      "border-radius:12px",
+      "cursor:pointer",
+      "display:flex",
+      "font-weight:600",
+      "box-sizing:border-box",
+      "width:100%",
+    ];
+
+    if (iconOnly) {
+      // Icon centred and filling the button
+      styleParts.push("padding:12px", "flex-direction:column", "align-items:center", "justify-content:center", "gap:0");
+    } else {
+      styleParts.push("padding:10px", "flex-direction:column", "align-items:flex-start", "justify-content:flex-start", "gap:6px");
+    }
+
+    if (clip.bgColor) styleParts.push(`background:${clip.bgColor}`);
+    if (clip.fgColor) styleParts.push(`color:${clip.fgColor}`);
+
+    const style = styleParts.join(";");
+
+    if (iconOnly) {
+      // Large centred icon; size is chosen so the icon fills ~60% of the button height (96px → ~48px)
+      return `
+        <button class="rh-soundboard-clip" data-id="${clip.id}" style="${style}" title="${clip.label}">
+          <ha-icon icon="${clip.icon}" style="--mdi-icon-size:48px;width:48px;height:48px;display:block;"></ha-icon>
+        </button>
+      `;
+    }
+
+    return `
+      <button class="rh-soundboard-clip" data-id="${clip.id}" style="${style}">
+        ${showIcon ? `<div style="display:flex;align-items:center;gap:8px;width:100%;">
+          <ha-icon icon="${clip.icon}"></ha-icon>
+          ${showText ? `<span style="font-size:13px;line-height:1.2;">${clip.label}</span>` : ""}
+        </div>` : (showText ? `<span style="font-size:13px;font-weight:600;line-height:1.2;">${clip.label}</span>` : "")}
+        ${showText ? `<div style="font-size:11px;opacity:0.78;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${clip.sourceLabel} • ${clip.mediaType}</div>
+        <div style="font-size:11px;opacity:0.72;line-height:1.2;">${this._clipStatusText(clip)}</div>` : ""}
+      </button>
+    `;
+  }
+
   _render() {
     if (!this._hass) {
       return;
@@ -292,6 +339,8 @@ class RHSoundboardCard extends HTMLElement {
     const buttonLabel = this._connected ? "Disconnect" : "Connect";
     const volumeDisabled = this._busy || !this._selectedTarget;
     const volumePercent = this._selectedTargetVolumePercent();
+    const showText = this._config.show_text !== false;
+    const showIcon = this._config.show_icon !== false;
 
     this.innerHTML = `
       <ha-card${this._renderHeader()}>
@@ -312,42 +361,7 @@ class RHSoundboardCard extends HTMLElement {
           <div style="display:grid;grid-template-columns:repeat(${columns}, minmax(0, 1fr));gap:10px;">
             ${
               clips
-                .map((clip) => {
-                  const styleParts = [
-                    "min-height:96px",
-                    "padding:10px",
-                    "border:none",
-                    "border-radius:12px",
-                    "cursor:pointer",
-                    "display:flex",
-                    "flex-direction:column",
-                    "align-items:flex-start",
-                    "justify-content:flex-start",
-                    "gap:6px",
-                    "font-weight:600",
-                  ];
-                  if (clip.bgColor) {
-                    styleParts.push(`background:${clip.bgColor}`);
-                  }
-                  if (clip.fgColor) {
-                    styleParts.push(`color:${clip.fgColor}`);
-                  }
-                  const style = styleParts.join(";");
-                  return `
-              <button
-                class="rh-soundboard-clip"
-                data-id="${clip.id}"
-                style="${style}"
-              >
-                <div style="display:flex;align-items:center;gap:8px;width:100%;">
-                  <ha-icon icon="${clip.icon}"></ha-icon>
-                  <span style="font-size:13px;line-height:1.2;">${clip.label}</span>
-                </div>
-                <div style="font-size:11px;opacity:0.78;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;">${clip.sourceLabel} • ${clip.mediaType}</div>
-                <div style="font-size:11px;opacity:0.72;line-height:1.2;">${this._clipStatusText(clip)}</div>
-              </button>
-            `;
-                })
+                .map((clip) => this._renderClip(clip, showText, showIcon))
                 .join("") || '<div style="grid-column:1 / -1;opacity:0.7;">No clips configured</div>'
             }
           </div>
