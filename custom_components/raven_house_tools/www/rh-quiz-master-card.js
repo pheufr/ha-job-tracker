@@ -1,9 +1,10 @@
-﻿class RHQuizMasterCard extends HTMLElement {
+class RHQuizMasterCard extends HTMLElement {
   constructor() {
     super();
     this._resolvedMediaUrls = new Map();
     this._pendingResolutions = new Set();
     this._mediaCacheTtlMs = 60 * 60 * 1000;
+    this._lastRenderKey = "";
   }
 
   setConfig(config) {
@@ -25,8 +26,23 @@
     return title === "" ? "" : ` header="${title}"`;
   }
 
+  connectedCallback() {
+    this.addEventListener("click", (e) => this._handleClick(e));
+  }
+
+  _buildRenderKey() {
+    if (!this._hass) return "";
+    const players = this._players();
+    return players
+      .map((p) => `${p.entityId}:${p.total}:${p.round}:${p.enabled ? 1 : 0}`)
+      .join("|");
+  }
+
   set hass(hass) {
     this._hass = hass;
+    const key = this._buildRenderKey();
+    if (key === this._lastRenderKey) return;
+    this._lastRenderKey = key;
     this._render();
   }
 
@@ -215,45 +231,38 @@
         </div>
       </ha-card>
     `;
-
-    this._attachHandlers();
   }
 
-  _attachHandlers() {
-    this.querySelectorAll("button").forEach((button) => {
-      button.onclick = async (event) => {
-        const action = event.currentTarget.dataset.action;
-        const entityId = event.currentTarget.dataset.entity;
+  _handleClick(e) {
+    const button = e.target.closest("button[data-action]");
+    if (!button) return;
+    const action = button.dataset.action;
+    const entityId = button.dataset.entity;
 
-        if (action === "new-round") {
-          await this._call("start_new_round");
-          return;
-        }
+    if (action === "new-round") {
+      this._call("start_new_round");
+      return;
+    }
 
-        if (action === "new-quiz") {
-          if (confirm("Reset all RH Quiz scores and start a new quiz?")) {
-            await this._call("start_new_quiz");
-          }
-          return;
-        }
+    if (action === "new-quiz") {
+      if (confirm("Reset all RH Quiz scores and start a new quiz?")) {
+        this._call("start_new_quiz");
+      }
+      return;
+    }
 
-        if (action === "add" || action === "remove") {
-          const points = Number(event.currentTarget.dataset.points || 0);
-          await this._call(action === "add" ? "add_points" : "remove_points", {
-            entity_id: entityId,
-            points,
-          });
-          return;
-        }
+    if (action === "add" || action === "remove") {
+      const points = Number(button.dataset.points || 0);
+      this._call(action === "add" ? "add_points" : "remove_points", {
+        entity_id: entityId,
+        points,
+      });
+      return;
+    }
 
-        if (action === "joker") {
-          await this._call("use_joker", {
-            entity_id: entityId,
-          });
-        }
-
-      };
-    });
+    if (action === "joker") {
+      this._call("use_joker", { entity_id: entityId });
+    }
   }
 
   getCardSize() {

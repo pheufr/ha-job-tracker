@@ -368,51 +368,54 @@ class RHSoundboardCard extends HTMLElement {
         </div>
       </ha-card>
     `;
-
-    this._attachHandlers(clips);
   }
 
-  _attachHandlers(clips) {
-    const connect = this.querySelector("#rh-soundboard-connect");
-    if (connect) {
-      connect.onclick = () => this._toggleConnection();
+  connectedCallback() {
+    this.addEventListener("click", (e) => this._handleClick(e));
+    this.addEventListener("change", (e) => this._handleChange(e));
+    this.addEventListener("input", (e) => this._handleInput(e));
+  }
+
+  _handleClick(e) {
+    const button = e.target.closest("button");
+    if (!button) return;
+
+    if (button.id === "rh-soundboard-connect") {
+      this._toggleConnection();
+      return;
     }
 
-    const targetSelect = this.querySelector("#rh-soundboard-target");
-    if (targetSelect) {
-      targetSelect.onchange = async (event) => {
-        this._selectedTarget = event.currentTarget.value || "";
-        if (this._selectedTarget) {
-          await this._call("soundboard_set_target", { entity_id: this._selectedTarget });
-        }
-        this._requestRender(true);
-      };
+    if (button.classList.contains("rh-soundboard-clip")) {
+      const clips = this._clips();
+      const id = button.dataset.id;
+      const clip = clips.find((c) => c.id === id);
+      if (clip) {
+        this._playClip(clip);
+      }
     }
+  }
 
-    const volumeInput = this.querySelector("#rh-soundboard-volume");
-    const volumeValue = this.querySelector("#rh-soundboard-volume-value");
-    if (volumeInput) {
-      volumeInput.oninput = (event) => {
-        if (volumeValue) {
-          volumeValue.textContent = `${event.currentTarget.value}%`;
-        }
-      };
-      volumeInput.onchange = async (event) => {
-        await this._setVolume(event.currentTarget.value);
-      };
+  _handleChange(e) {
+    if (e.target.id === "rh-soundboard-target") {
+      this._selectedTarget = e.target.value || "";
+      if (this._selectedTarget) {
+        this._call("soundboard_set_target", { entity_id: this._selectedTarget });
+      }
+      this._requestRender(true);
+      return;
     }
+    if (e.target.id === "rh-soundboard-volume") {
+      this._setVolume(e.target.value);
+    }
+  }
 
-    const clipById = new Map(clips.map((clip) => [clip.id, clip]));
-    this.querySelectorAll(".rh-soundboard-clip").forEach((button) => {
-      button.onclick = async (event) => {
-        const id = event.currentTarget.dataset.id;
-        const clip = clipById.get(id);
-        if (!clip) {
-          return;
-        }
-        await this._playClip(clip);
-      };
-    });
+  _handleInput(e) {
+    if (e.target.id === "rh-soundboard-volume") {
+      const volumeValue = this.querySelector("#rh-soundboard-volume-value");
+      if (volumeValue) {
+        volumeValue.textContent = `${e.target.value}%`;
+      }
+    }
   }
 
   getCardSize() {
