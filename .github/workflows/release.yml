@@ -69,16 +69,30 @@ jobs:
           TYPE="${{ steps.bump_type.outputs.type }}"
 
           CURRENT=$(jq -r '.version // empty' "$MANIFEST")
-          if [ -z "$CURRENT" ]; then
-            CURRENT="0.0.0"
-          fi
+          LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+          RELEASE_VERSION="${LATEST_TAG#v}"
 
-          if ! [[ "$CURRENT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Current version '$CURRENT' is not semver (x.y.z)."
+          if [ -n "$CURRENT" ] && ! [[ "$CURRENT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Current manifest version '$CURRENT' is not semver (x.y.z)."
             exit 1
           fi
 
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          if [ -n "$LATEST_TAG" ] && ! [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Latest release tag '$LATEST_TAG' is not semver (vX.Y.Z)."
+            exit 1
+          fi
+
+          BASE_VERSION="$CURRENT"
+          if [ -n "$RELEASE_VERSION" ] && [ "$RELEASE_VERSION" != "$CURRENT" ]; then
+            echo "Using latest release version $RELEASE_VERSION instead of manifest version '${CURRENT:-<empty>}'"
+            BASE_VERSION="$RELEASE_VERSION"
+          fi
+
+          if [ -z "$BASE_VERSION" ]; then
+            BASE_VERSION="0.0.0"
+          fi
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
 
           case "$TYPE" in
             major)
@@ -99,9 +113,9 @@ jobs:
           NEXT="${MAJOR}.${MINOR}.${PATCH}"
           TAG="v${NEXT}"
 
-          echo "current=$CURRENT" > "$GITHUB_OUTPUT"
-          echo "next=$NEXT" > "$GITHUB_OUTPUT"
-          echo "tag=$TAG" > "$GITHUB_OUTPUT"
+          echo "current=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Ensure tag does not already exist
         shell: bash
