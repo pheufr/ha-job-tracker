@@ -10,7 +10,7 @@
   "requirements": [
     "croniter==1.4.1"
   ],
-  "version": "",
+  "version": "2026.3.2",
   "issue_tracker": "https://github.com/pheufr/ha-raven-house/issues",
   "integration_type": "service",
   "iot_class": "local_polling",
