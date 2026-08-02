@@ -5,6 +5,7 @@ class RHQuizMasterCard extends HTMLElement {
     this._pendingResolutions = new Set();
     this._mediaCacheTtlMs = 60 * 60 * 1000;
     this._lastRenderKey = "";
+    this._confirmNewQuiz = false;
   }
 
   setConfig(config) {
@@ -33,9 +34,10 @@ class RHQuizMasterCard extends HTMLElement {
   _buildRenderKey() {
     if (!this._hass) return "";
     const players = this._players();
-    return players
-      .map((p) => `${p.entityId}:${p.total}:${p.round}:${p.enabled ? 1 : 0}`)
-      .join("|");
+    return [
+      this._confirmNewQuiz ? "confirm" : "normal",
+      players.map((p) => `${p.entityId}:${p.total}:${p.round}:${p.enabled ? 1 : 0}`).join("|"),
+    ].join("~");
   }
 
   set hass(hass) {
@@ -111,14 +113,12 @@ class RHQuizMasterCard extends HTMLElement {
       return "";
     }
     try {
-      const resolved = new URL(url, window.location.origin);
-      if (resolved.origin === window.location.origin) {
-        return `${resolved.pathname}${resolved.search}${resolved.hash}`;
-      }
+      // Always return a fully-qualified absolute URL so that images load
+      // correctly regardless of the page origin (e.g. HA Cast receiver).
+      return new URL(url, window.location.origin).href;
     } catch (_err) {
       return url;
     }
-    return url;
   }
 
   _resolveMediaSource(mediaContentId) {
@@ -213,6 +213,16 @@ class RHQuizMasterCard extends HTMLElement {
     `;
   }
 
+  _renderNewQuizConfirm() {
+    return `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(var(--rgb-red-color,255,0,0),0.12);margin-bottom:10px;">
+        <span style="flex:1;font-weight:600;font-size:13px;">Reset all scores and start a new quiz?</span>
+        <button data-action="new-quiz-confirm" style="${this._buttonStyle(true)}">Confirm</button>
+        <button data-action="new-quiz-cancel" style="${this._buttonStyle()}">Cancel</button>
+      </div>
+    `;
+  }
+
   _render() {
     if (!this._hass) return;
     const compact = Boolean(this._config.compact);
@@ -221,10 +231,11 @@ class RHQuizMasterCard extends HTMLElement {
     this.innerHTML = `
       <ha-card${this._renderHeader()}>
         <div style="padding:12px;">
+          ${this._confirmNewQuiz ? this._renderNewQuizConfirm() : `
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <button data-action="new-round" style="${this._buttonStyle()}">New Round</button>
             <button data-action="new-quiz" style="${this._buttonStyle(true)}">Start New Quiz</button>
-          </div>
+          </div>`}
           <div style="font-size:${compact ? "12px" : "14px"};">
             ${players.map((player, index) => `${this._row(player, compact)}${index < players.length - 1 ? '<hr style="border:none;border-top:1px solid rgba(128,128,128,0.25);margin:0;">' : ""}`).join("") || '<div>No players</div>'}
           </div>
@@ -245,9 +256,20 @@ class RHQuizMasterCard extends HTMLElement {
     }
 
     if (action === "new-quiz") {
-      if (confirm("Reset all RH Quiz scores and start a new quiz?")) {
-        this._call("start_new_quiz");
-      }
+      this._confirmNewQuiz = true;
+      this._render();
+      return;
+    }
+
+    if (action === "new-quiz-confirm") {
+      this._confirmNewQuiz = false;
+      this._call("start_new_quiz");
+      return;
+    }
+
+    if (action === "new-quiz-cancel") {
+      this._confirmNewQuiz = false;
+      this._render();
       return;
     }
 
