@@ -305,7 +305,7 @@ The Soundboard feature adds a custom card and services for low-latency short aud
 Service domain: `raven_house_tools`
 
 - `soundboard_set_target`
-- `soundboard_set_mode`
+- `soundboard_set_mode` (optional advanced service for automations)
 - `soundboard_connect`
 - `soundboard_disconnect`
 - `soundboard_play_clip`
@@ -314,8 +314,9 @@ Recommended flow:
 
 1. Set or select a target media player.
 2. Connect once (optionally with a `dead_air_media` clip).
-3. Trigger clips repeatedly.
-4. Disconnect when done.
+3. Set volume from the in-card slider when needed.
+4. Trigger clips repeatedly (direct play mode).
+5. Disconnect when done.
 
 ### Soundboard Card
 
@@ -343,8 +344,6 @@ clips:
     fg_color: "#1f2a44"
     bg_color: "#f9d976"
     media: media-source://media_source/local/sfx/applause.mp3
-default_mode: connected
-show_mode_selector: true
 ```
 
 Clip fields:
@@ -357,16 +356,13 @@ Clip fields:
 - `fg_color`: optional per-button foreground/text color
 - `bg_color`: optional per-button background color
 
-Optional card fields:
-
-- `default_mode`: `connected` (default) or `direct`
-- `show_mode_selector`: set `false` to hide the in-card mode select
+The card uses direct clip playback, keeps a target selector with connect/disconnect control, and includes an in-card volume slider for the selected target.
 
 Runtime status sensor:
 
 - `sensor.rh_soundboard_session`
 
-The card reads this sensor to reflect live connection state, pending requests, and per-target playback mode.
+The card reads this sensor to reflect live connection state and pending requests.
 
 ## Notes
 

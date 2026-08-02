@@ -133,18 +133,18 @@
       });
   }
 
-  _buttonStyle(primary = false) {
+  _buttonStyle(primary = false, compact = false) {
     return [
       "appearance:none",
       "border:0",
       "border-radius:999px",
       `background:${primary ? "var(--primary-color)" : "var(--secondary-background-color)"}`,
       `color:${primary ? "var(--text-primary-color, #fff)" : "var(--primary-text-color)"}`,
-      "padding:10px 12px",
+      `padding:${compact ? "7px 10px" : "10px 12px"}`,
       "font:inherit",
       "font-weight:700",
       "cursor:pointer",
-      "min-height:40px",
+      `min-height:${compact ? "32px" : "40px"}`,
       "flex:1 1 0",
       "box-sizing:border-box",
       "text-align:center",
@@ -156,14 +156,14 @@
       .map((points) => {
         const action = points > 0 ? "add" : "remove";
         const label = points > 0 ? `+${points}` : `${points}`;
-        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}" style="${this._buttonStyle()}">${label}</button>`;
+        return `<button data-action="${action}" data-entity="${player.entityId}" data-points="${Math.abs(points)}" style="${this._buttonStyle(false, true)}">${label}</button>`;
       })
       .join("");
 
     return `
-      <div style="padding:12px 0;display:grid;gap:10px;${player.enabled ? "" : "opacity:0.45;"}">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;">
-          <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+      <div style="padding:9px 0;display:grid;gap:8px;${player.enabled ? "" : "opacity:0.45;"}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
             ${this._renderPhoto(player.photo, player.name)}
             <div style="min-width:0;">
               <div style="display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;">
@@ -175,9 +175,9 @@
           </div>
           <div style="font-size:${compact ? "20px" : "24px"};font-weight:800;line-height:1;">${player.round >= 0 ? "+" : ""}${player.round}</div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
           ${actionButtons}
-          <button data-action="joker" data-entity="${player.entityId}" style="${this._buttonStyle(true)}">Joker</button>
+          <button data-action="joker" data-entity="${player.entityId}" style="${this._buttonStyle(true, true)}">Joker</button>
         </div>
       </div>
     `;
