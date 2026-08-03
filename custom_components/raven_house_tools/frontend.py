@@ -16,6 +16,11 @@ _LOGGER = logging.getLogger(__name__)
 
 _FRONTEND_REGISTERED_KEY = f"{DOMAIN}_frontend_registered"
 
+_STATIC_URL_CANDIDATES = [
+    "/local/raven_house_tools",
+    "/raven_house_tools",
+]
+
 _CARD_FILES = [
     "rh-jobs-card.js",
     "rh-quiz-card.js",
@@ -65,22 +70,38 @@ async def async_setup_frontend(hass: HomeAssistant) -> None:
         _LOGGER.debug("Raven House Tools frontend already registered, skipping")
         return
 
-    hass.data[_FRONTEND_REGISTERED_KEY] = True
-
-    static_url = "/raven_house_tools"
     static_path = Path(__file__).parent / "www"
+    registered_urls: list[str] = []
 
-    try:
-        await hass.http.async_register_static_paths(
-            [StaticPathConfig(static_url, str(static_path), False)]
+    for static_url in _STATIC_URL_CANDIDATES:
+        try:
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig(static_url, str(static_path), False)]
+            )
+            _LOGGER.debug(
+                "Registered Raven House Tools card assets at %s", static_url
+            )
+            registered_urls.append(static_url)
+        except Exception as err:  # noqa: BLE001
+            # Expected when Home Assistant already has this route in place.
+            _LOGGER.debug("Static path %s not newly registered: %s", static_url, err)
+            if "already" in str(err).lower():
+                registered_urls.append(static_url)
+
+    if not registered_urls:
+        _LOGGER.error(
+            "Could not register any Raven House Tools static card paths; cards will not load"
         )
-    except Exception as err:  # noqa: BLE001
-        # Happens when this URL is already registered during repeated setup paths.
-        _LOGGER.debug("Static path %s already registered: %s", static_url, err)
-    _LOGGER.debug("Registered Raven House Tools card assets at %s", static_url)
+        return
+
+    # Prefer /local/* URLs because they are the most broadly compatible with
+    # kiosk/cast/no-cache frontend contexts.
+    preferred_static_url = registered_urls[0]
     version = await hass.async_add_executor_job(_compute_assets_revision, static_path)
 
     for card_file in _CARD_FILES:
-        url = f"{static_url}/{card_file}?v={version}"
+        url = f"{preferred_static_url}/{card_file}?v={version}"
         add_extra_js_url(hass, url)
         _LOGGER.debug("Registered Lovelace module URL: %s", url)
+
+    hass.data[_FRONTEND_REGISTERED_KEY] = True
